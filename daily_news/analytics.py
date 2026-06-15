@@ -84,15 +84,21 @@ def get_threads_media_stats(root_id):
         return stats
     
     try:
-        url = f"https://graph.threads.net/v1.0/{root_id}"
+        url = f"https://graph.threads.net/v1.0/{root_id}/insights"
         res = requests.get(url, params={
-            "fields": "like_count,reply_count,reposts_count",
+            "metric": "likes,replies,reposts",
             "access_token": THREADS_TOKEN
         }, timeout=15)
-        data = res.json()
-        stats["likes"] = data.get("like_count", 0)
-        stats["replies"] = data.get("reply_count", 0)
-        stats["reposts"] = data.get("reposts_count", 0)
+        data = res.json().get("data", [])
+        for metric in data:
+            name = metric.get("name")
+            val = metric.get("values", [{}])[0].get("value", 0)
+            if name == "likes":
+                stats["likes"] = val
+            elif name == "replies":
+                stats["replies"] = val
+            elif name == "reposts":
+                stats["reposts"] = val
     except Exception as e:
         print(f"      ⚠ 스레드 정보 수집 실패: {e}")
         
@@ -181,6 +187,7 @@ def send_telegram_report(analysis):
     return False
 
 def main():
+    import argparse
     print("=" * 60)
     print("  글로벌 SNS 성과 분석기 (2:00 PM Batch)")
     print("=" * 60)
@@ -190,24 +197,39 @@ def main():
         print("✗ 수집할 게시 이력이 존재하지 않습니다.")
         sys.exit(0)
         
-    # 발행된 지 최소 20시간 이상 경과한 가장 최근 게시물 탐색 (오후 2시 분석 시 전날 오전 10시 게시물 매칭용)
-    now = datetime.datetime.now()
+    parser = argparse.ArgumentParser(description="SNS Analytics Tool")
+    parser.add_argument("--latest", action="store_true", help="Force analyze the absolute latest post in history")
+    parser.add_argument("--date", type=str, help="Analyze post on a specific date (YYYY-MM-DD)")
+    args, unknown = parser.parse_known_args()
+
     latest_entry = None
-    
-    for entry in reversed(history):
-        pub_at_str = entry.get("published_at")
-        if pub_at_str:
-            try:
-                pub_at = datetime.datetime.fromisoformat(pub_at_str)
-                if (now - pub_at).total_seconds() >= 20 * 3600:
-                    latest_entry = entry
-                    break
-            except Exception:
-                pass
-                
-    if not latest_entry:
-        print("  ⚠ 발행 20시간 이상 경과한 이력이 없습니다. 최근 이력으로 폴백합니다.")
+    if args.date:
+        for entry in reversed(history):
+            if entry.get("date") == args.date:
+                latest_entry = entry
+                break
+        if not latest_entry:
+            print(f"✗ {args.date} 날짜의 게시 이력을 찾을 수 없습니다.")
+            sys.exit(1)
+    elif args.latest:
         latest_entry = history[-1]
+    else:
+        # 발행된 지 최소 20시간 이상 경과한 가장 최근 게시물 탐색 (오후 2시 분석 시 전날 오전 10시 게시물 매칭용)
+        now = datetime.datetime.now()
+        for entry in reversed(history):
+            pub_at_str = entry.get("published_at")
+            if pub_at_str:
+                try:
+                    pub_at = datetime.datetime.fromisoformat(pub_at_str)
+                    if (now - pub_at).total_seconds() >= 20 * 3600:
+                        latest_entry = entry
+                        break
+                except Exception:
+                    pass
+                    
+        if not latest_entry:
+            print("  ⚠ 발행 20시간 이상 경과한 이력이 없습니다. 최근 이력으로 폴백합니다.")
+            latest_entry = history[-1]
         
     date = latest_entry.get("date")
     mode = latest_entry.get("mode", "daily")
