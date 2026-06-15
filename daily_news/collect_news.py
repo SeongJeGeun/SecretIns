@@ -70,6 +70,31 @@ def fetch_feed(name, config):
         print(f"  ✗ [{name}] 피드 가져오기 실패: {e}", file=sys.stderr)
         return None
 
+def fetch_og_image(url):
+    """기사 원문 링크에 방문하여 og:image 메타 태그의 이미지 주소를 파싱합니다."""
+    if not url or not url.startswith("http"):
+        return ""
+    try:
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=5) as response:
+            html_content = response.read().decode('utf-8', errors='ignore')
+            # og:image 태그 매칭
+            match = re.search(r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']', html_content, re.IGNORECASE)
+            if not match:
+                match = re.search(r'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']', html_content, re.IGNORECASE)
+            if match:
+                img_url = match.group(1).strip()
+                if img_url.startswith("//"):
+                    img_url = "https:" + img_url
+                elif img_url.startswith("/") and not img_url.startswith("//"):
+                    from urllib.parse import urljoin
+                    img_url = urljoin(url, img_url)
+                return img_url
+    except Exception:
+        pass
+    return ""
+
+
 def parse_rss(xml_data, config):
     import xml.etree.ElementTree as ET
     items = []
@@ -103,6 +128,12 @@ def parse_rss(xml_data, config):
             if not title or not link:
                 continue
 
+            # 기사 원문 접속하여 대표 이미지 URL 추출
+            print(f"      - 기사 대표 이미지 추출 시도 중: {title[:30]}...")
+            image_url = fetch_og_image(link)
+            if image_url:
+                print(f"        ✓ 이미지 발견: {image_url[:60]}")
+
             items.append({
                 "title": title,
                 "link": link,
@@ -110,7 +141,8 @@ def parse_rss(xml_data, config):
                 "description": description[:300], # 요약 설명은 300자까지만 저장
                 "publisher": publisher or config["source_type"],
                 "source_type": config["source_type"],
-                "language": config["language"]
+                "language": config["language"],
+                "image_url": image_url
             })
     except Exception as e:
         print(f"  ✗ RSS 파싱 에러: {e}", file=sys.stderr)

@@ -291,9 +291,11 @@ def download_images(data, output_dir):
             print(f"    → {filename}")
             ok = download_and_resize(url, img_path)
             if not ok:
+                print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={card['company']}, title={card['title']}, query={query}")
                 generate_placeholder(img_path, card["colors"]["bg"])
         else:
             print(f"    ✗ 검색 결과 없음")
+            print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={card['company']}, title={card['title']}, query={query}")
             generate_placeholder(img_path, card["colors"]["bg"])
 
 
