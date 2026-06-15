@@ -99,38 +99,52 @@ def record_publish(date, mode, ig_result, threads_results, telegram_ok):
 # 1. 이미지 호스팅 (Catbox.moe)
 # ============================================================
 def upload_to_catbox(file_path):
-    """로컬 PNG를 uguu.se에 우선 업로드하고, 실패 시 Catbox에 업로드하여 공개 URL 반환"""
+    """로컬 PNG를 uguu.se에 우선 업로드하고, 실패 시 Catbox에 업로드하여 공개 URL 반환 (최대 3회 재시도)"""
     print(f"    ↑ {os.path.basename(file_path)}")
+    max_retries = 3
+    
     # 1. uguu.se 업로드 시도 (인스타그램 타임아웃 방지용 고속 임시 호스팅)
-    try:
-        with open(file_path, "rb") as f:
-            res = requests.post(
-                "https://uguu.se/upload.php",
-                files={"files[]": f},
-                timeout=15
-            )
-        if res.status_code == 200:
-            data = res.json()
-            if data.get("success") and data.get("files"):
-                url = data["files"][0]["url"]
-                print(f"      → {url} (via uguu.se)")
-                return url
-    except Exception as e:
-        print(f"      ⚠ uguu.se 업로드 실패 ({e}), Catbox로 폴백합니다.")
+    for attempt in range(1, max_retries + 1):
+        try:
+            with open(file_path, "rb") as f:
+                res = requests.post(
+                    "https://uguu.se/upload.php",
+                    files={"files[]": f},
+                    timeout=15
+                )
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("success") and data.get("files"):
+                    url = data["files"][0]["url"]
+                    print(f"      → {url} (via uguu.se, 시도 {attempt})")
+                    return url
+        except Exception as e:
+            print(f"      ⚠ uguu.se 업로드 시도 {attempt} 실패: {e}")
+            if attempt < max_retries:
+                time.sleep(2)
+
+    print("      ⚠ uguu.se 업로드 최종 실패, Catbox로 폴백합니다.")
 
     # 2. Catbox.moe 폴백 업로드 시도
-    with open(file_path, "rb") as f:
-        res = requests.post(
-            "https://catbox.moe/user/api.php",
-            data={"reqtype": "fileupload"},
-            files={"fileToUpload": f},
-            timeout=30
-        )
-    if res.status_code == 200 and res.text.startswith("https://"):
-        url = res.text.strip()
-        print(f"      → {url} (via Catbox)")
-        return url
-    raise Exception(f"모든 파일 호스팅 업로드 실패: {res.status_code} - {res.text}")
+    for attempt in range(1, max_retries + 1):
+        try:
+            with open(file_path, "rb") as f:
+                res = requests.post(
+                    "https://catbox.moe/user/api.php",
+                    data={"reqtype": "fileupload"},
+                    files={"fileToUpload": f},
+                    timeout=30
+                )
+            if res.status_code == 200 and res.text.startswith("https://"):
+                url = res.text.strip()
+                print(f"      → {url} (via Catbox, 시도 {attempt})")
+                return url
+        except Exception as e:
+            print(f"      ⚠ Catbox 업로드 시도 {attempt} 실패: {e}")
+            if attempt < max_retries:
+                time.sleep(2)
+
+    raise Exception("모든 파일 호스팅 업로드 최종 실패")
 
 
 # ============================================================
@@ -351,12 +365,13 @@ def build_thread_chain_from_card(card):
     # threads 필드가 있으면 사용, 없으면 자동 생성
     if "threads" in card:
         t = card["threads"]
-        return [
-            t["hook"],
-            t["detail"],
-            t["context"],
-            t["question"],
+        chain = [
+            t.get("hook", ""),
+            t.get("detail", ""),
+            t.get("context", ""),
+            t.get("question", ""),
         ]
+        return [item for item in chain if item.strip()]
 
     # 자동 생성 폴백
     return [
@@ -434,12 +449,15 @@ def publish_threads(news_cards, date):
 # ============================================================
 def send_telegram_report(date, mode, news_cards, ig_result, threads_results):
     print("\n  [Telegram] 결과 보고 전송...")
+    import html
 
     mode_label = "📰 일일 브리핑" if mode == "daily" else "🔍 이벤트 딥다이브"
     news_list = ""
     for i, card in enumerate(news_cards):
         emoji = "✅" if card["status"] == "official" else "📰"
-        news_list += f"  {i+1}. {emoji} {card['company']}: {card['title']}\n"
+        safe_company = html.escape(card.get('company', ''))
+        safe_title = html.escape(card.get('title', ''))
+        news_list += f"  {i+1}. {emoji} {safe_company}: {safe_title}\n"
 
     ig_status = f"✅ 게시 완료 (ID: {ig_result})" if ig_result else "❌ 실패 또는 건너뜀"
 
@@ -501,6 +519,7 @@ def main():
     parser.add_argument("--skip-threads", action="store_true")
     parser.add_argument("--skip-telegram", action="store_true")
     parser.add_argument("--force", action="store_true", help="중복 검사 무시하고 강제 게시")
+    parser.add_argument("--clean", action="store_true", help="발행 완료 후 로컬 빌드 파일 및 임시 다운로드 폴더 자동 삭제")
     args = parser.parse_args()
 
     date = args.date
@@ -622,19 +641,22 @@ def main():
     record_publish(date, mode, ig_result, threads_results, telegram_ok)
 
     # ── 로컬 파일 정리 (Clean up) ──
-    try:
-        import shutil
-        print("\n  [Clean up] 로컬 임시 파일 삭제 중...")
-        if os.path.exists(build_dir):
-            shutil.rmtree(build_dir)
-            print(f"    ✓ 빌드 디렉토리 삭제 완료")
-        
-        dl_dir = os.path.expanduser(f"~/Downloads/{date}_daily_news")
-        if os.path.exists(dl_dir):
-            shutil.rmtree(dl_dir)
-            print(f"    ✓ 다운로드 디렉토리 삭제 완료")
-    except Exception as e:
-        print(f"    ✗ 파일 정리 실패: {e}")
+    if args.clean:
+        try:
+            import shutil
+            print("\n  [Clean up] 로컬 임시 파일 삭제 중...")
+            if os.path.exists(build_dir):
+                shutil.rmtree(build_dir)
+                print(f"    ✓ 빌드 디렉토리 삭제 완료")
+            
+            dl_dir = os.path.expanduser(f"~/Downloads/{date}_daily_news")
+            if os.path.exists(dl_dir):
+                shutil.rmtree(dl_dir)
+                print(f"    ✓ 다운로드 디렉토리 삭제 완료")
+        except Exception as e:
+            print(f"    ✗ 파일 정리 실패: {e}")
+    else:
+        print("\n  [Clean up] 로컬 빌드 파일 및 다운로드 디렉토리를 보존합니다. (삭제하려면 --clean 옵션 사용)")
 
     print(f"\n{'='*60}")
     print(f"  ✅ 게시 및 정리 완료! ({date}/{mode})")

@@ -228,6 +228,14 @@ graph TD
 3. 오늘 날짜(KST 기준 YYYY-MM-DD 형식)를 직접 스스로 올바르게 판단한 뒤, python3 daily_news/publish.py --date [오늘날짜] 를 최종 실행하여 인스타그램/스레드 배포를 진행하고, 텔레그램 보고 및 로컬 청소를 완료해.
 ```
 
+### Step 4. 매일 오후 16:00 (독자 댓글 분석 및 소통)
+당일 배포된 피드와 스레드에 작성된 새로운 독자 댓글들을 수집해 AI로 개별 맞춤 대댓글을 작성합니다.
+```text
+1. python3 daily_news/comment_manager.py --fetch 를 실행하여 오늘 등록된 미답변 독자 댓글 목록을 수집하고 화면에 출력해.
+2. 출력된 미답변 댓글들을 하나씩 분석하여, IT/AI 뉴스 채널의 친절하고 전문성 있는 어조(Korean, 100자 내외)로 개별 대댓글 답변 문장을 작성해.
+3. 각 댓글마다 python3 daily_news/comment_manager.py --reply --platform [instagram/threads] --id [댓글ID] --message "[답변내용]" 을 실행하여 실시간으로 답글을 실서버에 발행하고 텔레그램 보고가 발송되는지 확인해.
+```
+
 ---
 
 ## 5. 완료 보고 프로토콜 (Report Format)
