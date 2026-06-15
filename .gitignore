@@ -4,3 +4,7 @@
 *.key
 *.pem
 node_modules/
+daily_news/20*/
+daily_news/analytics_report.json
+daily_news/raw_news_pool.json
+daily_news/publish_history.json

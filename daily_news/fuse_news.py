@@ -31,7 +31,9 @@ HEADERS = {
 EXCLUDE_KEYWORDS = [
     "logo", "icon", "banner", "avatar", "sprite", "nav", "menu", "footer", 
     "button", "placeholder", "default", "spacer", "advertisement", "ad-",
-    "theme", "widget", "arrow", "loading", "profile", "comment"
+    "theme", "widget", "arrow", "loading", "profile", "comment",
+    "ave", "avenue", "promo", "event", "popup", "ad_", "ad-", "main-banner", 
+    "sub-banner", "top-", "bottom-", "toyota", "car-", "vehicle"
 ]
 
 

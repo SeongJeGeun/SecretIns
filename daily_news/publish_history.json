@@ -86,5 +86,35 @@
     "instagram_id": null,
     "threads_count": 5,
     "telegram": true
+  },
+  {
+    "date": "2026-06-15",
+    "mode": "daily",
+    "published_at": "2026-06-15T19:00:13.147021",
+    "instagram_id": "18025619315826385",
+    "threads": [
+      {
+        "company": "삼성전자/SK하이닉스",
+        "root_id": "17973026547110163"
+      },
+      {
+        "company": "앤스로픽/각국 정부",
+        "root_id": "18099768500155399"
+      },
+      {
+        "company": "글로벌 빅테크",
+        "root_id": "18091181084629367"
+      },
+      {
+        "company": "직장인 설문",
+        "root_id": "17876903328486656"
+      },
+      {
+        "company": "개인정보보호위원회",
+        "root_id": "17968922193098265"
+      }
+    ],
+    "threads_count": 5,
+    "telegram": true
   }
 ]
