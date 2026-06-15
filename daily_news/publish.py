@@ -559,7 +559,21 @@ def main():
             for i, card in enumerate(cards):
                 emoji = "✅" if card["status"] == "official" else "📰"
                 caption_lines.append(f"{i+1}. {card['company']}: {card['title']}")
-            caption_lines.append("\n#IT뉴스 #AI뉴스 #테크트렌드 #인공지능 #테크브리핑")
+                
+            # 동적 해시태그 중합 (각 카드의 스레드 해시태그 풀 활용)
+            injected_tags = set()
+            for card in cards:
+                if "threads" in card and "context" in card["threads"]:
+                    context_tags = [t.strip() for t in card["threads"]["context"].split("#") if t.strip()]
+                    for tag in context_tags:
+                        injected_tags.add(tag)
+            
+            if injected_tags:
+                tag_str = "\n" + " ".join([f"#{t}" for t in sorted(list(injected_tags))])
+                caption_lines.append(tag_str)
+            else:
+                caption_lines.append("\n#IT뉴스 #AI뉴스 #테크트렌드 #인공지능 #테크브리핑")
+                
             caption = "\n".join(caption_lines)
 
             ig_result = publish_instagram(public_urls, caption)

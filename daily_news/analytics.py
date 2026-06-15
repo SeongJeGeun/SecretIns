@@ -190,8 +190,25 @@ def main():
         print("✗ 수집할 게시 이력이 존재하지 않습니다.")
         sys.exit(0)
         
-    # 최근 1~2일 내에 게시된 가장 최신 게시물 찾기
-    latest_entry = history[-1]
+    # 발행된 지 최소 20시간 이상 경과한 가장 최근 게시물 탐색 (오후 2시 분석 시 전날 오전 10시 게시물 매칭용)
+    now = datetime.datetime.now()
+    latest_entry = None
+    
+    for entry in reversed(history):
+        pub_at_str = entry.get("published_at")
+        if pub_at_str:
+            try:
+                pub_at = datetime.datetime.fromisoformat(pub_at_str)
+                if (now - pub_at).total_seconds() >= 20 * 3600:
+                    latest_entry = entry
+                    break
+            except Exception:
+                pass
+                
+    if not latest_entry:
+        print("  ⚠ 발행 20시간 이상 경과한 이력이 없습니다. 최근 이력으로 폴백합니다.")
+        latest_entry = history[-1]
+        
     date = latest_entry.get("date")
     mode = latest_entry.get("mode", "daily")
     ig_id = latest_entry.get("instagram_id")
