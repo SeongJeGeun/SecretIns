@@ -1,0 +1,16 @@
+{
+  "name": "media-os",
+  "version": "1.0.0",
+  "description": "Obsidian Vault를 공용 두뇌로 사용하는 AI 미디어 운영 시스템이다. Antigravity와 Codex는 직접 대화하지 않고, 같은 Markdown 파일 구조를 읽고 쓰면서 간접 협업한다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}

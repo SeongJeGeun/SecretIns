@@ -1,0 +1,82 @@
+[
+  {
+    "date": "2026-06-08",
+    "mode": "daily",
+    "published_at": "2026-06-08T01:44:14.618685",
+    "instagram_id": null,
+    "threads_count": 5,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-08",
+    "mode": "event",
+    "published_at": "2026-06-08T14:42:30.759129",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-08",
+    "mode": "daily",
+    "published_at": "2026-06-08T22:30:32.278663",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-08",
+    "mode": "daily",
+    "published_at": "2026-06-08T22:32:00.692986",
+    "instagram_id": null,
+    "threads_count": 0,
+    "telegram": false
+  },
+  {
+    "date": "2026-06-08",
+    "mode": "daily",
+    "published_at": "2026-06-08T22:34:30.834561",
+    "instagram_id": null,
+    "threads_count": 0,
+    "telegram": false
+  },
+  {
+    "date": "2026-06-09",
+    "mode": "daily",
+    "published_at": "2026-06-09T15:30:36.611295",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-10",
+    "mode": "daily",
+    "published_at": "2026-06-10T16:38:03.197882",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-11",
+    "mode": "daily",
+    "published_at": "2026-06-11T17:45:40.512118",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-12",
+    "mode": "daily",
+    "published_at": "2026-06-12T23:18:15.116009",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-12",
+    "mode": "daily",
+    "published_at": "2026-06-12T23:19:07.466980",
+    "instagram_id": null,
+    "threads_count": 4,
+    "telegram": true
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "date": "2026-06-12",
+  "card_count": 6,
+  "news_count": 4,
+  "files": [
+    {
+      "filename": "2026-06-12_card_01.png",
+      "size_bytes": 1431426
+    },
+    {
+      "filename": "2026-06-12_card_02.png",
+      "size_bytes": 1235558
+    },
+    {
+      "filename": "2026-06-12_card_03.png",
+      "size_bytes": 1096285
+    },
+    {
+      "filename": "2026-06-12_card_04.png",
+      "size_bytes": 932726
+    },
+    {
+      "filename": "2026-06-12_card_05.png",
+      "size_bytes": 1244961
+    },
+    {
+      "filename": "2026-06-12_card_06.png",
+      "size_bytes": 976995
+    }
+  ]
+}
