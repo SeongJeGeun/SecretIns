@@ -72,12 +72,23 @@ def record_publish(date, mode, ig_result, threads_results, telegram_ok):
     """게시 이력 기록"""
     from datetime import datetime
     history = load_history()
+    
+    threads_list = []
+    if threads_results:
+        for r in threads_results:
+            if r.get("status") == "success":
+                threads_list.append({
+                    "company": r.get("company"),
+                    "root_id": r.get("root_id")
+                })
+                
     history.append({
         "date": date,
         "mode": mode,
         "published_at": datetime.now().isoformat(),
         "instagram_id": ig_result,
-        "threads_count": len(threads_results) if threads_results else 0,
+        "threads": threads_list,
+        "threads_count": len(threads_list),
         "telegram": telegram_ok,
     })
     save_history(history)

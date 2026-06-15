@@ -164,73 +164,68 @@ python3 build.py --data news_data.json --publish
 
 ---
 
-### 3-8. 다차원 융합 분석 파이프라인 설계도 (FUSION_PIPELINE_V1)
+### 3-8. 다차원 융합 분석 파이프라인 설계도 (FUSION_PIPELINE_V2)
 본 시스템은 단순 요약과 숏폼 배포를 지양하고, 교차 검증된 신뢰성 높은 뉴스를 다차원적으로 융합 분석하여 최상의 고품질 카드뉴스로 배포하기 위한 파이프라인으로 구성됩니다.
 
 ```mermaid
 graph TD
-    A["1. 수집 단계 (collect_news.py)
-    - Google News / Hacker News RSS
-    - 최근 24시간 글로벌/국내 IT & AI"]
+    A["1. 수집 & 1차 빌드 (02:00 AM)
+    - collect_news.py로 기사 수집
+    - AI: 4~10개 핵심 뉴스 선정 (숏폼 배제)
+    - fuse_news.py로 이미지 융합
+    - build.py로 1차 HTML/PNG 렌더링
+    - 이미지 누락 시 AI generate_image 보완"]
     
-    B["2. 융합 기획 단계 (AI Agent)
-    - 중복/마이너/숏폼 트렌드 배제
-    - 핵심 뉴스 4~10개 동적 선정
-    - 2개 이상 교차 URL(related_urls) 매핑
-    - news_data.json 자동 생성"]
+    B["2. 피드백 반영 & 배포 (10:00 AM)
+    - feedback_engine.py 실행 (전날 성과 피드백 반영)
+    - build.py 재실행 (최종 최적화 PNG 재생성)
+    - publish.py 실행 (인스타/스레드 배포 및 텔레그램 보고)
+    - 로컬 빌드 파일 및 다운로드 청소"]
     
-    C["3. 미디어 융합 단계 (fuse_news.py)
-    - related_urls 기반 HTML Crawling
-    - og:image / img 태그 추출 및 규격 필터링
-    - 로고/배너 배제, w >= 500px 실사 획득
-    - 1080x702 Center Crop & Resize"]
-    
-    D["4. 비주얼 보완 단계 (AI Agent)
-    - MISSING_IMAGE_TRIGGER 실시간 탐지
-    - DuckDuckGo 추가 웹 검색 검토
-    - 검색 실패 시 generate_image 실사풍 생성
-    - assets/ 이미지 완벽 채움"]
-    
-    E["5. 렌더링 단계 (build.py)
-    - HTML/CSS 템플릿에 데이터 바인딩
-    - Playwright 브라우저 헤드리스 스냅샷
-    - 1080x1350 카드 PNG 세트 빌드
-    - contact_sheet.png 자동 생성"]
-    
-    F["6. 배포 및 사후 검증 (publish.py)
-    - Catbox/Uguu 고속 웹 호스팅 업로드
-    - Instagram Carousel & Threads Chain 게시
-    - 동적 대기 및 피드 캡션 비교 사후 검증
-    - 텔레그램 성과 보고 및 로컬 청소"]
+    C["3. 성과 분석 (02:00 PM)
+    - analytics.py 실행
+    - 최근 게시물의 API 도달/참여 메트릭 수집
+    - 텔레그램 성과 보고 전송
+    - analytics_report.json 생성 (익일 피드백용)"]
 
     A --> B
     B --> C
-    C --> D
-    D --> E
-    E --> F
+    C -.->|"익일 피드백 데이터 전달"| B
 ```
 
 - **파이프라인의 핵심 가치**:
   1. **숏폼 전면 배제**: 순간의 후킹용 숏폼보다, 지적 깊이가 있는 캐러셀 카드뉴스와 깊이 있는 스레드 답글 체인의 가치를 우선시합니다.
   2. **교차 정합성 보장**: 하나의 기사만 인용하지 않고, 최소 2개 매체의 교차 보도를 통해 검증된 팩트만을 다룹니다.
   3. **실사 비주얼 우선**: 로고와 아이콘을 지양하고, 실제 제품/부처/이벤트의 실사 이미지를 매핑하거나 이에 완벽히 대응하는 고화질 실사풍 AI 이미지를 사용합니다.
+  4. **성과 피드백 환류**: 분석 모듈(`analytics.py`)과 피드백 모듈(`feedback_engine.py`)의 상호작용을 통해 당일 원고 배치와 해시태그를 지속적으로 자동 튜닝합니다.
 
 ---
 
-## 4. 일일 뉴스 제작 표준 프롬프트
-새로운 뉴스를 제작할 때는 포워드에게 다음 프롬프트를 입력받거나 자체적으로 실행합니다:
+## 4. 크론(Cron) 자동화 스케줄 및 표준 실행 가이드
+본 미디어 OS는 사용자의 Scheduled Tasks 크론 스케줄링에 맞춰 다음 3단계 파이프라인으로 매일 자동 가동됩니다.
 
+### Step 1. 매일 새벽 02:00 (뉴스 수집 및 1차 원고 기획)
+이전 24시간 동안의 테크 정보를 수집하고 원고를 1차 빌드합니다.
 ```text
-context: md 파일 절대 수정하지 마. 읽기만 해.
-
-memory/active_memory.md 읽고 CARD_NEWS_TEMPLATE_V2 및 THREADS_POLICY_V2 정책 따라 실행.
-
 1. 최근 24시간 글로벌 IT/AI 뉴스를 조사하되 숏폼(숏츠, 릴스 등) 관련 가벼운 토픽은 제외해. 중요도 및 발표량에 맞춰 최소 4개에서 최대 10개의 핵심 주제를 선정하고, 각 주제별로 2개 이상의 교차 기사를 검색해 related_urls에 담아 news_data.json을 작성해. (대형 이벤트 여부에 따라 daily/event 모드 자동 판별)
 2. python3 daily_news/fuse_news.py 를 실행하여 교차 기사들로부터 고화질(500px 이상) 실제 실사 이미지를 자동으로 융합 및 매칭해.
 3. python3 daily_news/build.py --data daily_news/news_data.json 을 1차로 실행해.
 4. 만약 이미지를 찾지 못해 터미널에 [MISSING_IMAGE_TRIGGER] 로그가 발생하면, 너의 내장된 이미지 생성 기능(generate_image)을 사용해 기사 맥락에 딱 맞는 실사풍 이미지를 직접 생성해서 보완해.
-5. 이미지가 모두 완벽하게 채워지면 python3 daily_news/build.py --data daily_news/news_data.json --publish 를 최종 실행해.
-6. 최종 결과물(콘택트 시트 및 텔레그램 발송 완료) 확인 후 로컬 파일 정리 결과를 함께 보고해.
+```
+
+### Step 2. 매일 오전 10:00 (성과 피드백 반영 및 최종 배포)
+전날 14시 보고서를 바탕으로 원고를 자동 최적화한 뒤 SNS에 최종 발행합니다.
+```text
+1. python3 daily_news/feedback_engine.py 를 실행하여 전날 분석된 피드백을 news_data.json에 오버라이딩 반영해.
+2. 피드백이 반영된 원고를 기반으로 python3 daily_news/build.py --data daily_news/news_data.json 을 다시 실행해 최종 PNG 파일들을 재생성해.
+3. python3 daily_news/publish.py --date {TODAY_DATE} 를 최종 실행하여 인스타그램/스레드 배포를 진행하고, 텔레그램 보고 및 로컬 청소를 완료해.
+```
+
+### Step 3. 매일 오후 14:00 (성과 분석 및 피드백 생성)
+배포된 콘텐츠의 도달 및 참여 효율을 분석하여 다음 날 배포에 전달할 가이드를 생산합니다.
+```text
+1. python3 daily_news/analytics.py 를 실행하여 최근 발행된 게시물들의 실시간 도달률, 저장수, 좋아요, 답글 수 통계를 API로 역추적해.
+2. 텔레그램으로 성과 보고서가 전송되었는지 확인하고, 생성된 daily_news/analytics_report.json이 다음 날 10시 배포에서 정상 참조되도록 유지해.
 ```
 
 ---
