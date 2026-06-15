@@ -78,5 +78,13 @@
     "instagram_id": null,
     "threads_count": 4,
     "telegram": true
+  },
+  {
+    "date": "2026-06-15",
+    "mode": "daily",
+    "published_at": "2026-06-15T17:15:12.539902",
+    "instagram_id": null,
+    "threads_count": 5,
+    "telegram": true
   }
 ]
