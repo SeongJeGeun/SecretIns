@@ -301,7 +301,7 @@ def get_threads_user_id():
     raise Exception(f"Threads 사용자 ID 조회 실패: {data}")
 
 
-def create_and_publish_thread(user_id, text, reply_to_id=None):
+def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None):
     """Threads 게시물 1개를 생성하고 발행, media_id 반환"""
     payload = {
         "media_type": "TEXT",
@@ -310,6 +310,14 @@ def create_and_publish_thread(user_id, text, reply_to_id=None):
     }
     if reply_to_id:
         payload["reply_to_id"] = reply_to_id
+
+    if poll_options:
+        import json
+        poll_attachment = {}
+        option_keys = ["option_a", "option_b", "option_c", "option_d"]
+        for k, opt in zip(option_keys, poll_options[:4]):
+            poll_attachment[k] = opt
+        payload["poll_attachment"] = json.dumps(poll_attachment)
 
     # 컨테이너 생성
     res = requests.post(
@@ -386,7 +394,13 @@ def publish_threads(news_cards, date):
             for j, text in enumerate(chain_texts):
                 label = ["🪝 Hook", "📋 Detail", "📎 Source/Context", "❓ Question"][j] if j < 4 else f"Reply {j+1}"
                 print(f"      {label}...")
-                post_id = create_and_publish_thread(user_id, text, reply_to_id=reply_to)
+                
+                poll_opts = None
+                if j == 3 and "threads" in card and "poll_options" in card["threads"]:
+                    poll_opts = card["threads"]["poll_options"]
+                    print(f"        (투표 활성화: {poll_opts})")
+                    
+                post_id = create_and_publish_thread(user_id, text, reply_to_id=reply_to, poll_options=poll_opts)
                 thread_ids.append(post_id)
                 reply_to = post_id  # 다음 답글은 이전 게시물에 연결
                 print(f"        ✓ ID: {post_id}")
