@@ -214,27 +214,66 @@ def publish_instagram(image_urls, caption):
     print("    이미지 처리 대기 (20초)...")
     time.sleep(20)
 
-    print("    게시 중...")
-    for attempt in range(1, max_retries + 1):
-        try:
-            res = requests.post(
-                f"https://graph.facebook.com/v19.0/{ig_id}/media_publish",
-                data={"creation_id": carousel_id, "access_token": IG_TOKEN},
-                timeout=20
-            )
-            pub_data = res.json()
-            if "id" in pub_data:
-                print(f"  ✓ Instagram 게시 완료! Media ID: {pub_data['id']}")
-                return pub_data["id"]
-            else:
-                raise Exception(f"게시 응답 오류: {pub_data}")
-        except Exception as e:
-            print(f"      ⚠ 게시 실패 (시도 {attempt}/{max_retries}): {e}")
-            if attempt == max_retries:
-                raise Exception(f"최종 게시 실패: {e}")
-            wait_time = 15 * attempt
-            print(f"      ➔ {wait_time}초 후 재시도합니다...")
-            time.sleep(wait_time)
+    # 3. 최종 게시 요청 (1차)
+    print("    최종 게시 요청 (media_publish)...")
+    published_successfully = False
+    published_id = None
+    try:
+        res = requests.post(
+            f"https://graph.facebook.com/v19.0/{ig_id}/media_publish",
+            data={"creation_id": carousel_id, "access_token": IG_TOKEN},
+            timeout=20
+        )
+        pub_data = res.json()
+        if "id" in pub_data:
+            print(f"    ✓ 1차 게시 요청 응답 성공! ID: {pub_data['id']}")
+            published_successfully = True
+            published_id = pub_data["id"]
+        else:
+            print(f"    ⚠ 1차 게시 요청 응답 에러 (백그라운드 처리 확인 대기): {pub_data}")
+    except Exception as e:
+        print(f"    ⚠ 1차 게시 요청 실패: {e}")
+
+    # 4. 동적 대기 (15초 * 이미지 장수)
+    wait_time = len(image_urls) * 15
+    print(f"    ⏳ 인스타그램 미디어 백그라운드 처리 동적 대기 시작 ({wait_time}초)...")
+    time.sleep(wait_time)
+
+    # 5. 피드 리스트 확인 (사후 검증)
+    print("    🔍 인스타그램 피드 리스트 조회하여 실제 발행 여부 검증 중...")
+    try:
+        res_media = requests.get(
+            f"https://graph.facebook.com/v19.0/{ig_id}/media",
+            params={
+                "fields": "id,caption",
+                "access_token": IG_TOKEN
+            },
+            timeout=20
+        )
+        media_list_data = res_media.json()
+        
+        # 캡션 앞 30글자를 매칭 키로 사용
+        match_key = caption[:30].strip()
+        
+        # 최근 5개의 피드 중 캡션이 겹치는 글이 실제로 올라왔는지 검증
+        for media in media_list_data.get("data", [])[:5]:
+            med_caption = media.get("caption", "")
+            if match_key in med_caption:
+                print(f"  ✓ Instagram 피드 실제 발행 확인 완료! Media ID: {media['id']}")
+                return media["id"]
+        
+        # 피드에선 못 찾았지만 1차 응답이 정상적으로 통과했었다면 정상 발행으로 간주
+        if published_successfully:
+            print(f"  ✓ Instagram 1차 응답 성공 기준 발행 완료 처리 (ID: {published_id})")
+            return published_id
+            
+        raise Exception("인스타그램 피드 리스트에서 오늘 자 뉴스 게시글을 발견하지 못했습니다.")
+        
+    except Exception as e:
+        print(f"  ✗ Instagram 발행 최종 검증 실패: {e}")
+        if published_successfully:
+            return published_id
+        raise e
 
 
 # ============================================================
