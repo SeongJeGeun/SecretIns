@@ -15,6 +15,7 @@ import json
 import re
 import html
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import urllib.parse
@@ -128,12 +129,6 @@ def parse_rss(xml_data, config):
             if not title or not link:
                 continue
 
-            # 기사 원문 접속하여 대표 이미지 URL 추출
-            print(f"      - 기사 대표 이미지 추출 시도 중: {title[:30]}...")
-            image_url = fetch_og_image(link)
-            if image_url:
-                print(f"        ✓ 이미지 발견: {image_url[:60]}")
-
             items.append({
                 "title": title,
                 "link": link,
@@ -142,11 +137,36 @@ def parse_rss(xml_data, config):
                 "publisher": publisher or config["source_type"],
                 "source_type": config["source_type"],
                 "language": config["language"],
-                "image_url": image_url
+                "image_url": ""
             })
     except Exception as e:
         print(f"  ✗ RSS 파싱 에러: {e}", file=sys.stderr)
     return items
+
+
+def enrich_items_with_images(items, max_workers=8):
+    """기사 원문 대표 이미지 추출을 병렬 처리합니다."""
+    if not items:
+        return items
+
+    worker_count = min(max_workers, len(items))
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        future_map = {
+            executor.submit(fetch_og_image, item["link"]): item
+            for item in items
+        }
+        for future in as_completed(future_map):
+            item = future_map[future]
+            print(f"      - 기사 대표 이미지 추출 완료: {item['title'][:30]}...")
+            try:
+                image_url = future.result()
+            except Exception:
+                image_url = ""
+            item["image_url"] = image_url
+            if image_url:
+                print(f"        ✓ 이미지 발견: {image_url[:60]}")
+    return items
+
 
 def main():
     print("=" * 60)
@@ -160,6 +180,7 @@ def main():
         xml_data = fetch_feed(name, config)
         if xml_data:
             items = parse_rss(xml_data, config)
+            items = enrich_items_with_images(items)
             print(f"    ✓ {len(items)}개 기사 파싱 성공")
             for item in items:
                 # 중복 링크 제거
