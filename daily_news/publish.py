@@ -435,49 +435,8 @@ def publish_threads(news_cards, date):
 
         time.sleep(5)
 
-    success = sum(1 for r in results if r["status"] == "success")chain_from_card(card)
-
-        print(f"\n    [{i+1}/{len(news_cards)}] {company} (체인 {len(chain_texts)}개)")
-
-        try:
-            thread_ids = []
-            reply_to = None
-
-            for j, text in enumerate(chain_texts):
-                label = ["🪝 Hook", "📋 Detail", "📎 Source/Context", "❓ Question"][j] if j < 4 else f"Reply {j+1}"
-                print(f"      {label}...")
-                
-                poll_opts = None
-                if j == 3 and "threads" in card and "poll_options" in card["threads"]:
-                    poll_opts = card["threads"]["poll_options"]
-                    print(f"        (투표 활성화: {poll_opts})")
-                    
-                post_id = create_and_publish_thread(user_id, text, reply_to_id=reply_to, poll_options=poll_opts)
-                thread_ids.append(post_id)
-                reply_to = post_id  # 다음 답글은 이전 게시물에 연결
-                print(f"        ✓ ID: {post_id}")
-                time.sleep(3)
-
-            results.append({
-                "company": company,
-                "root_id": thread_ids[0],
-                "chain_count": len(thread_ids),
-                "status": "success",
-            })
-            print(f"      ✓ {company} 체인 완료 ({len(thread_ids)}개)")
-
-        except Exception as e:
-            print(f"      ✗ 실패: {e}")
-            results.append({
-                "company": company,
-                "error": str(e),
-                "status": "failed",
-            })
-
-        time.sleep(5)
-
     success = sum(1 for r in results if r["status"] == "success")
-    print(f"\n  ✓ Threads 체인 게시 완료: {success}/{len(news_cards)}개 성공")
+    print(f"\n  ✓ Threads 단일 포스트 게시 완료: {success}/{len(news_cards)}개 성공")
     return results
 
 
