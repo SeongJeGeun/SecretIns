@@ -1,185 +1,245 @@
 {
-  "date": "2026-06-15",
+  "date": "2026-06-16",
   "mode": "daily",
   "cards": [
     {
-      "company": "삼성전자/SK하이닉스",
-      "theme": "samsung",
-      "status": "reported",
-      "title": "반도체 핵심 소재 日 공급 중단 위기",
-      "body": "반도체 금속 배선 및 HBM 공정에 필수적인 핵심 소재 '육불화텅스텐(WF6)'을 공급해 온 일본의 칸토덴카와 센트럴글래스가 오는 7월 1일부터 생산을 영구 중단합니다. 중국의 텅스텐 광물 수출 통제로 인해 일본 생산 라인이 마비된 것이 원인이며, 이로 인해 삼성전자와 SK하이닉스 등 국내 업계의 대체 공급선(후성, SK스페셜티 등) 확보가 매우 시급해졌습니다.",
-      "source": "더구루 보도 기준",
-      "image_search": "semiconductor silicon wafer manufacturing factory",
+      "company": "앤비디아",
+      "theme": "nvidia",
+      "status": "official",
+      "title": "엔비디아, 250억 달러 초대형 회사채 발행 성공",
+      "body": "인공지능(AI) 반도체 절대강자 엔비디아가 5년 만에 투자등급 회사채 시장에 복귀해 최대 250억 달러 규모의 회사채를 성공적으로 발행했습니다. AI 가속기 생산을 위한 설비 투자 자금 확보 및 기존 부채 리파이낸싱을 목적으로 추진된 이번 발행에는 사상 최대 수준인 850억 달러 규모의 매수 주문이 폭주하며 엔비디아를 향한 글로벌 투자자들의 견고한 신뢰를 재확인했습니다.",
+      "source": "Morningstar 보도 기준",
+      "image_search": "nvidia corporate building semiconductor finance",
       "image_url": "",
       "related_urls": [
-        "https://v.daum.net/v/20260615052840",
-        "https://www.thelec.kr/news/articleView.html?idxno=27000"
+        "https://www.morningstar.com/news/dow-jones/20260615101/nvidia-aims-to-raise-up-to-25-billion-in-historic-bond-sale",
+        "https://www.investing.com/news/nvidia-corp-bond-sale-25-billion-june-2026"
       ],
       "colors": {
-        "bg": "#0f2042",
-        "soft": "#1d3557",
-        "ink": "#f1faee"
+        "bg": "#0a1c10",
+        "soft": "#1c4424",
+        "ink": "#e6f5eb"
       },
       "threads": {
-        "hook": "🚨 국내 반도체 소재 공급망에 초대형 비상이 걸렸습니다. HBM 공정에 필수적인 일본산 WF6가 7월부터 공급이 영구 중단됩니다.",
-        "detail": "중국의 텅스텐 광물 규제 여파로 일본 소재사들이 공급 영구 중단을 결정했습니다. 삼성전자와 SK하이닉스는 급히 국산 소재 다변화(후성, SK스페셜티 등)로 대응을 서두르고 있으나 가격 폭등 등 단기적 여파는 피하기 어려울 전망입니다.",
-        "context": "#삼성전자 #SK하이닉스 #반도체 #HBM",
-        "question": "국산화 대체로 공급망 위기를 극복할 수 있을까요? 여러분의 의견을 들려주세요.",
-        "poll_options": ["극복 가능", "극복 어려움"]
+        "hook": "💰 엔비디아가 무려 250억 달러(약 34조원) 규모의 사상 최대 회사채를 발행했습니다. 주문액만 850억 달러가 몰리며 AI 황제의 저력을 입증했습니다.",
+        "detail": "5년 만의 대규모 회사채 발행은 차세대 AI 칩인 '블랙웰' 및 '루빈' 생산을 위한 실탄 확보와 기존 부채 리파이낸싱이 목적입니다. 압도적인 수요 덕에 당초 예상했던 200억 달러를 크게 웃도는 수준에서 조달 금리도 유리하게 확정되었습니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #엔비디아 #회사채 #AI인프라",
+        "question": "엔비디아의 공격적인 실탄 확보가 향후 AI 칩 독점 구조를 더 공고히 만들까요?",
+        "poll_options": [
+          "독점 구조 강화될 것",
+          "대체재 등장으로 약화",
+          "상황을 더 지켜봐야 함"
+        ]
       }
     },
     {
-      "company": "앤스로픽/각국 정부",
+      "company": "앤스로픽",
       "theme": "anthropic",
       "status": "reported",
-      "title": "美 앤스로픽 수출 통제와 'AI 주권' 전쟁",
-      "body": "미국 정부가 앤스로픽의 고성능 최신 AI 모델인 '페이블 5'와 '미토스 5'에 대해 국가 안보 리스크를 이유로 외국인 접근을 차단하는 수출 통제령을 내렸습니다. 이번 사태로 미국 기술 종속의 한계가 여실히 드러나며, 프랑스, 일본, 한국 등 세계 각국은 자국 데이터 영토를 지키기 위해 독자적인 '소버린 AI(Sovereign AI)' 인프라 구축에 사활을 걸기 시작했습니다.",
-      "source": "조선일보 보도 기준",
-      "image_search": "sovereign digital cloud map concept",
+      "title": "美 정부 최신 AI 모델 규제에 앤스로픽 전면 서비스 차단",
+      "body": "미국 정부가 국가 안보 위협을 이유로 앤스로픽의 차세대 초거대 AI 모델인 'Fable 5'와 'Mythos 5'에 대해 외국인의 접근을 즉각 차단하라는 수출 통제 행정 명령을 내렸습니다. 앤스로픽 측은 규제 준수를 위해 해당 모델들의 글로벌 서비스를 전격 중단하는 강수를 두었으며, 이는 미 정부가 반도체뿐만 아니라 대중 공개된 상용 AI 소프트웨어에 직접적 규제를 가한 첫 사례로 기록되어 업계에 큰 충격을 주고 있습니다.",
+      "source": "The Guardian 보도 기준",
+      "image_search": "anthropic claude ai software server technology restriction",
       "image_url": "",
       "related_urls": [
-        "https://v.daum.net/v/20260615070100",
-        "https://www.zdnet.co.kr/view/?no=20260615093400"
+        "https://www.theguardian.com/technology/2026/jun/12/us-government-orders-anthropic-to-ban-foreign-nationals-from-using-fable-5-mythos-5",
+        "https://www.semafor.com/article/2026/06/12/us-government-orders-anthropic-to-ban-foreign-nationals-from-using-mythos-5-fable-5"
       ],
       "colors": {
-        "bg": "#1b1917",
+        "bg": "#241e17",
+        "soft": "#3d3125",
+        "ink": "#fbf6f0"
+      },
+      "threads": {
+        "hook": "🚨 AI 안보 규제가 소프트웨어 단까지 침투했습니다. 미국 정부의 차세대 Claude 모델 수출 통제로 앤스로픽이 신규 서비스를 중단했습니다.",
+        "detail": "정부는 최신 AI 모델의 탈옥(jailbreak) 리스크와 안보 유출 우려를 명분으로 내세웠으나, 업계와 앤스로픽 측은 과도한 규제가 글로벌 사이버 방어 도구의 사용을 막고 시장 혼란을 초래한다며 거세게 반발하고 나섰습니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #앤스로픽 #수출규제 #AI안보",
+        "question": "소프트웨어 AI 모델에 대한 정부의 직접적인 수출 규제 조치는 정당할까요?",
+        "poll_options": [
+          "국가 안보상 불가피함",
+          "과도한 시장 발전 저해",
+          "국산 AI 자립이 해결책"
+        ]
+      }
+    },
+    {
+      "company": "스페이스X",
+      "theme": "spacex",
+      "status": "official",
+      "title": "스페이스X 역사적 상장 데뷔… '100만 AI 위성' 구상 공개",
+      "body": "스페이스X(SPCX)가 나스닥에 주당 135달러로 역사적인 기업공개(IPO)를 완료하며 첫 거래일 만에 기업가치 2.5조 달러를 돌파하는 기염을 토했습니다. 일론 머스크는 자사 AI 벤처인 xAI와의 합병을 강조하며, 지상 데이터센터의 고질적인 전력 공급 부족과 부지 문제를 극복하기 위해 우주 궤도에 100만 개의 인공지능 위성을 배치하여 '우주 데이터센터'를 구축하겠다는 원대한 구상을 공식적으로 밝혔습니다.",
+      "source": "Enterprise Times 보도 기준",
+      "image_search": "spacex falcon rocket launch space satellite earth",
+      "image_url": "",
+      "related_urls": [
+        "https://www.enterprisetimes.co.uk/2026/06/12/spacex-historic-ipo-shares-soar/",
+        "https://www.thestar.com.my/tech/tech-news/2026/06/15/spacex-spacex-ipo-historic-market-valuation"
+      ],
+      "colors": {
+        "bg": "#0d1726",
+        "soft": "#1b2a47",
+        "ink": "#f0f4f8"
+      },
+      "threads": {
+        "hook": "🚀 금융과 우주 역사의 신기원! 스페이스X가 나스닥에 상장하여 시총 2.5조 달러를 넘어서며, 세계 최초 '100만 AI 위성' 구상을 발표했습니다.",
+        "detail": "일론 머스크는 xAI의 초거대 AI 연산력을 지상이 아닌 우주로 보냅니다. 태양광 패널과 우주의 차가운 냉각 환경을 활용해 지구의 전력망 부하 없이 무제한으로 구동하는 궤도형 AI 센터 시대를 열겠다는 전략입니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #스페이스X #일론머스크 #xAI",
+        "question": "우주 공간에 100만 개의 AI 위성을 띄우는 머스크의 구상이 실현 가능할까요?",
+        "poll_options": [
+          "획기적인 인프라 혁신",
+          "우주 쓰레기 등 현실 불가",
+          "장기적인 가능성 높음"
+        ]
+      }
+    },
+    {
+      "company": "구글",
+      "theme": "google",
+      "status": "official",
+      "title": "구글, 목소리 톤 그대로 살린 '제미나이 3.5 라이브 번역' 공개",
+      "body": "구글이 다국어 음성 대화를 실시간으로 통역하는 오디오-투-오디오 기반 '제미나이 3.5 라이브 번역' 모델을 출시했습니다. 텍스트 변환 단계를 생략하고 스트리밍 오디오를 직접 학습·번역함으로써, 화자의 미세한 억양, 호흡, 감정 상태를 그대로 유지한 채 70개 이상의 언어를 양방향으로 번역하며 모바일 번역 앱 및 워크스페이스 Meet 화상 회의에 탑재될 예정입니다.",
+      "source": "Google 공식 발표 기준",
+      "image_search": "google gemini live translation smartphone technology",
+      "image_url": "",
+      "related_urls": [
+        "https://blog.google/technology/ai/google-gemini-3-5-live-translate-release/",
+        "https://www.cnet.com/tech/services/google-gemini-3-5-live-translate-features/"
+      ],
+      "colors": {
+        "bg": "#0f172a",
+        "soft": "#1e293b",
+        "ink": "#f8fafc"
+      },
+      "threads": {
+        "hook": "🗣️ 로봇 같은 번역 음성은 이제 안녕! 구글이 말하는 사람의 목소리 톤과 감정을 유지하며 실시간 번역을 제공하는 Gemini 3.5 라이브 번역을 론칭했습니다.",
+        "detail": "70개 이상의 언어를 감지하며, 폰을 귀에 대면 일반 통화처럼 실시간 음성 통역을 들려주는 '리스닝 모드'가 도입되었습니다. 텍스트 변환 없는 네이티브 오디오 번역으로 딜레이가 획기적으로 줄어들었습니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #구글제미나이 #GeminiLive #실시간번역",
+        "question": "구글의 실시간 감정-음성 번역 기술이 글로벌 협업의 패러다임을 바꿀까요?",
+        "poll_options": [
+          "획기적인 비즈니스 변화",
+          "기존 번역으로도 충분",
+          "실제 음성 품질 확인 필요"
+        ]
+      }
+    },
+    {
+      "company": "마이크로소프트",
+      "theme": "microsoft",
+      "status": "official",
+      "title": "MS, 역대 최대 규모 206개 취약점 패치… 제로데이 해결",
+      "body": "마이크로소프트가 6월 보안 정기 업데이트를 통해 윈도우 및 관련 시스템에서 식별된 역대 최대 규모인 206개의 취약점 보안 패치를 배포했습니다. 이 중에는 보안 연구원 'Nightmare Eclipse'가 깃허브 등에 무단 폭로한 치명적인 로컬 권한 상승(CVE-2026-45586 등) 및 원격 코드 실행 취약점이 다수 포함되어 있으며, MS 측은 시스템 오작동 방지와 보안 위협 선제 차단을 위해 사용자들의 조속한 패치 업데이트를 적극 당부했습니다.",
+      "source": "The Record 보도 기준",
+      "image_search": "microsoft windows security binary hacking code update",
+      "image_url": "",
+      "related_urls": [
+        "https://therecord.media/microsoft-patch-tuesday-june-2026-record-206-cves",
+        "https://www.computerworld.com/article/2026/06/11/microsoft-june-2026-patch-tuesday-analysis"
+      ],
+      "colors": {
+        "bg": "#18181b",
+        "soft": "#27272a",
+        "ink": "#fafafa"
+      },
+      "threads": {
+        "hook": "🔒 역대 최고 기록인 206개 보안 결함이 패치되었습니다. 최근 보안 업계 핫이슈였던 해커그룹 'Nightmare Eclipse'의 제로데이 폭로에 대응한 조치입니다.",
+        "detail": "이번 패치에는 33개의 크리티컬 취약점이 포함되어 있으며, 특히 네트워크 전송에 핵심적인 http.sys 원격 제어 취약점과 윈도우 디펜더 우회 제로데이가 집중 타겟이었습니다. 윈도우 서버 및 개인 기기 패치가 급선무입니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #마이크로소프트 #보안패치 #제로데이",
+        "question": "최근 빈번해진 OS 보안 이슈 속에서, 여러분은 정기 패치를 즉각 적용하고 계시나요?",
+        "poll_options": [
+          "자동 업데이트로 항상 즉각 적용",
+          "오류 우려로 며칠 지켜봄",
+          "보안 이슈 발생 시 수동 적용"
+        ]
+      }
+    },
+    {
+      "company": "PwC",
+      "theme": "career",
+      "status": "reported",
+      "title": "PwC 'AI 일자리 바롬터' 발표… AI 숙련 임금 62% 프리미엄",
+      "body": "글로벌 컨설팅사 PwC가 전 세계 10억 개 이상의 채용 정보를 분석한 '2026년 글로벌 AI 일자리 바롬터'에 따르면, AI 역량을 보유한 인재의 글로벌 평균 임금 프리미엄이 62%에 도달했습니다. 또한 AI 활용을 빠르게 확립한 고도화 기업들은 일반 피어 대비 무려 163%의 노동 생산성 향상과 높은 순고용 증가율을 보이며, 미래 노동 시장이 AI 숙련 여부에 따라 '양극화 트랙'으로 재편되고 있음을 규명했습니다.",
+      "source": "PwC 공식 보고서 기준",
+      "image_search": "office employee career success analysis data chart",
+      "image_url": "",
+      "related_urls": [
+        "https://www.pwc.com/gx/en/issues/artificial-intelligence/global-ai-jobs-barometer-2026.html",
+        "https://www.businessinsider.com/pwc-ai-jobs-report-skills-wages-headcount-2026-6"
+      ],
+      "colors": {
+        "bg": "#172554",
+        "soft": "#1e3a8a",
+        "ink": "#eff6ff"
+      },
+      "threads": {
+        "hook": "💼 AI 기술을 장착한 직장인의 가치가 폭등하고 있습니다. PwC 조사 결과 AI 숙련 인재의 급여 프리미엄이 사상 최고인 62%를 기록했습니다.",
+        "detail": "단순히 일자리가 줄어든다는 두려움과 달리, AI를 도입한 선두 기업들은 고용을 더 많이 늘리고 높은 생산성으로 격차를 벌리고 있습니다. 반면 주니어 신입직에서 조기 시니어급 업무 역량을 요구받는 고충도 확인되었습니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #AI일자리 #PwC보고서 #커리어성장",
+        "question": "AI가 보편화된 미래 일자리 환경에서 개인이 가장 우선 확보해야 할 역량은 무엇일까요?",
+        "poll_options": [
+          "AI 프롬프트/코딩 기술",
+          "협업 및 정서적 지능(EQ)",
+          "데이터 기반 비즈니스 기획"
+        ]
+      }
+    },
+    {
+      "company": "비바테크",
+      "theme": "vivatech",
+      "status": "reported",
+      "title": "유럽 최대 테크 행사 '비바테크 2026' 개막… AI 에너지 전쟁",
+      "body": "유럽 최대 스타트업 및 IT 전시회인 '비바테크(VivaTech) 2026'이 10주년을 맞이하여 파리에서 성대하게 개막했습니다. 올해는 '인공지능(AI)과 녹색 에너지(GreenTech)의 융합'을 핵심 아젠다로 내걸고 글로벌 빅테크 및 정부 사절단이 참여했으며, AI 데이터센터 고전력 인프라 수요를 충당하기 위한 탄소중립 전력망 대안과 친환경 기술 주권 수호 및 소버린 AI 인프라 구축 방안이 심도 있게 토론됩니다.",
+      "source": "TechNode Global 보도 기준",
+      "image_search": "vivatech paris exhibition hall tech startup booth",
+      "image_url": "",
+      "related_urls": [
+        "https://vivatech.com/news/vivatech-2026-anniversary-edition-focus-on-ai-energy",
+        "https://technode.global/2026/06/15/vivatech-2026-paris-expo-preview/"
+      ],
+      "colors": {
+        "bg": "#2e1065",
+        "soft": "#3b0764",
+        "ink": "#faf5ff"
+      },
+      "threads": {
+        "hook": "🇫🇷 파리에서 열린 유럽 최대 IT 행사 'VivaTech 2026'의 중심 주제는 역시 AI였습니다. 특히 기후 위기와 AI 인프라 전력 부족에 대한 해법에 관심이 쏠렸습니다.",
+        "detail": "MS, 구글 등 글로벌 리더들과 유럽의 스타트업들이 결집하여 생성형 AI 인프라 고도화와 소버린(Sovereign) 자국 주권 AI 생태계, 그리고 에너지 효율적인 하드웨어 설계에 대한 신기술을 쏟아내고 있습니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #비바테크 #VivaTech #AI에너지",
+        "question": "AI 급성장에 따른 기하급수적 전력 폭증 문제를 해결할 수 있는 가장 적절한 대안은?",
+        "poll_options": [
+          "원자력 발전 확대",
+          "신재생에너지 및 ESS 확대",
+          "AI 전력 소모 알고리즘 혁신"
+        ]
+      }
+    },
+    {
+      "company": "오픈AI",
+      "theme": "openai",
+      "status": "official",
+      "title": "오픈AI, 1.5억 달러 투자 '글로벌 파트너 네트워크' 가동",
+      "body": "오픈AI가 기업용 AI 도입 병목 현상을 타개하고 대규모 엔터프라이즈 전환을 가속화하기 위해 1억 5,000만 달러 규모의 첫 공식 글로벌 파트너 프로그램 '오픈AI 파트너 네트워크'를 론칭했습니다. 오픈AI는 현재의 진입 장벽이 기술 성능 한계가 아닌 기업 내 구현과 커스터마이징 문제라고 보고, 올해 말까지 파트너사들과 긴밀히 협력해 전 세계적으로 총 30만 명의 인증된 전문 AI 비즈니스 컨설턴트를 육성할 방침입니다.",
+      "source": "Business Insider 보도 기준",
+      "image_search": "openai partner network conference meeting room business",
+      "image_url": "",
+      "related_urls": [
+        "https://openai.com/blog/openai-partner-network-launch-2026/",
+        "https://www.businessinsider.com/openai-global-partner-program-launch-consultants-2026-6"
+      ],
+      "colors": {
+        "bg": "#1c1917",
         "soft": "#292524",
         "ink": "#f5f5f4"
       },
       "threads": {
-        "hook": "📢 [Fact Check] 🇺🇸 미국이 최고 성능 AI인 Claude의 수출 통제를 공식 단행하면서, 전 세계에 '소버린 AI(AI 주권)'의 필요성이 급부상했습니다.",
-        "detail": "미국 상무부가 안보 위협을 이유로 최신 모델의 해외 접속을 막음에 따라 해외 의존도가 높은 국내 AI 생태계에도 비상이 걸렸습니다. 독자적인 대안 LLM 인프라와 국가적 기술 주권 확보가 더욱 중요해진 시점입니다.",
-        "context": "#AI주권 #클로드 #조선일보 #인공지능",
-        "question": "미국의 규제 속에서 우리나라가 독자적인 AI 인프라를 확보할 수 있을까요?",
-        "poll_options": ["독자 AI 확보 가능", "해외 의존 지속"]
-      }
-    },
-    {
-      "company": "글로벌 빅테크",
-      "theme": "ai",
-      "status": "official",
-      "title": "빅테크, 아시아 데이터센터 확보 선점 경쟁",
-      "body": "AI 서비스 수요가 폭증하면서 마이크로소프트, 구글 등 글로벌 빅테크 기업들이 아시아 지역에서 2년 내 완공 예정인 데이터센터를 확보하기 위해 공격적인 쟁탈전에 들어갔습니다. 서버 구동을 위한 고전력 인프라 부족 and 구축 비용 증가 속에서도 시장 주도권을 빼앗기지 않기 위해 장기 임차 계약을 선점하는 움직임이 빨라지고 있습니다.",
-      "source": "전자신문 보도 기준",
-      "image_search": "server rack datacenter technology infrastructure",
-      "image_url": "",
-      "related_urls": [
-        "https://v.daum.net/v/20260615080000",
-        "https://v.daum.net/v/20260615062021"
-      ],
-      "colors": {
-        "bg": "#121212",
-        "soft": "#1e1e1e",
-        "ink": "#ffffff"
-      },
-      "threads": {
-        "hook": "💰 AI 폭증세를 견디기 위해, 글로벌 빅테크들이 2년 안에 지어질 아시아 데이터센터를 싹쓸이 계약하고 있습니다.",
-        "detail": "MS와 구글 등은 전력 소모량이 급증하는 AI 서버 인프라를 선점하려 장기 전력망 계약과 토지 매입을 진행 중입니다. 이러한 인프라 장악력이 결국 생성형 AI 서비스 생존의 승패를 결정지을 것으로 보입니다.",
-        "context": "#데이터센터 #인공지능 #빅테크 #인프라",
-        "question": "데이터센터의 전력 부족 문제를 해결할 수 있는 가장 현실적인 친환경 대안은?",
-        "poll_options": ["원자력 발전", "태양광/풍력", "해외 IDC 분산"]
-      }
-    },
-    {
-      "company": "직장인 설문",
-      "theme": "career",
-      "status": "reported",
-      "title": "한국 직장인 'AI 포모(FOMO)' 심화와 현실",
-      "body": "한국 직장인들이 해외 직장인에 비해 AI 시대로 인한 업무 도태 불안감(AI FOMO)을 가장 크게 느끼고 있는 것으로 나타났습니다. 그러나 대다수 한국 기업의 사내 AI 교육 프로그램과 유료 인프라 지원은 이에 미치지 못해, 개인의 기술적 조급증과 회사 내부 시스템의 준비 미흡 간 격차가 날로 깊어지고 있습니다.",
-      "source": "조선일보 보도 기준",
-      "image_search": "office worker stress laptop tired career technology",
-      "image_url": "",
-      "related_urls": [
-        "https://v.daum.net/v/20260615070500"
-      ],
-      "colors": {
-        "bg": "#1e293b",
-        "soft": "#334155",
-        "ink": "#f8fafc"
-      },
-      "threads": {
-        "hook": "📢 [Fact Check] 😰 \"나만 AI 시대에 도태되는 건 아닐까?\" 한국 직장인들의 AI 불안감은 세계 최고 수준이지만, 사내 준비는 꼴찌 수준입니다.",
-        "detail": "설문에 따르면 한국 직장인들은 극심한 불안감에 노출되어 있으나 정작 회사 차원에서 AI 교육이나 툴을 지원하는 곳은 미미한 실정입니다. 기술 습득에 대한 책임을 오롯이 개인에게 전가하는 실태 지적이 커지고 있습니다.",
-        "context": "#AI포모 #직장인 #커리어 #도태",
-        "question": "현재 업무에서 AI 도입으로 인한 도태 불안감을 느끼고 계시나요?",
-        "poll_options": ["불안감 매우 큼", "어느 정도 느낌", "전혀 안 느낌"]
-      }
-    },
-    {
-      "company": "개인정보보호위원회",
-      "theme": "government",
-      "status": "official",
-      "title": "생성형 AI 이용자 개인정보 가이드라인 발표",
-      "body": "정부 개인정보보호위원회가 생성형 AI 서비스 이용 고객을 위한 공식 안전 수칙을 배포했습니다. 프롬프트 창에 주민등록번호나 회사 기밀 등의 민감 정보를 함부로 입력하지 않고, 입력한 데이터가 모델의 기계 학습용으로 무단으로 수집 및 도용되지 않도록 학습 거부(Opt-out) 설정을 점검할 것을 공식 권고했습니다.",
-      "source": "개인정보보호위원회 공식 발표 기준",
-      "image_search": "data privacy security lock cybersecurity cyber",
-      "image_url": "",
-      "related_urls": [
-        "https://v.daum.net/v/20260615083058"
-      ],
-      "colors": {
-        "bg": "#0b3c5d",
-        "soft": "#328cc1",
-        "ink": "#ffffff"
-      },
-      "threads": {
-        "hook": "📢 [Fact Check] 🔒 챗GPT에 무심코 물어본 질문이 내 사생활 유출의 단초가 될 수 있습니다. 정부가 공식 발표한 개인정보 가이드를 꼭 숙지하세요.",
-        "detail": "개인정보위가 생성형 AI 프롬프트 이용 시 민감 정보를 기재하지 말고, 입력 데이터가 모델 학습에 도용되는 것을 차단하는 Opt-out 수동 설정을 활성화하라는 요령을 명시했습니다.",
-        "context": "#개인정보 #생성형AI #정부정책 #보안",
-        "question": "AI 서비스 이용 시 데이터 학습 비활성화(Opt-out) 설정을 직접 확인해 보셨나요?",
-        "poll_options": ["자주 설정함", "가끔 점검함", "한 번도 안 함"]
-      }
-    },
-    {
-      "company": "파미셀/두산",
-      "theme": "nvidia",
-      "status": "reported",
-      "title": "파미셀, 엔비디아 AI 서버 핵심 소재 독점 공급",
-      "body": "국내 바이오·정밀화학 기업 파미셀이 엔비디아의 차세대 AI 가속기 블랙웰(Blackwell) 등에 탑재되는 동박적층판(CCL) 핵심 원료인 저유전율 레진 및 경화제를 두산 전자BG에 전량 독점 공급하는 것으로 확인되었습니다. AI 가속기 시장 팽창에 따라 독점적 밸류체인 지위와 실적 성장에 대한 기대감이 한층 높아졌습니다.",
-      "source": "디일렉 보도 기준",
-      "image_search": "chemical advanced material semiconductor factory laboratory",
-      "image_url": "",
-      "related_urls": [
-        "https://www.thelec.kr/news/articleView.html?idxno=27000",
-        "https://www.edaily.co.kr/news/read?newsId=02279606645604160"
-      ],
-      "colors": {
-        "bg": "#062c16",
-        "soft": "#124c2a",
-        "ink": "#ecfdf5"
-      },
-      "threads": {
-        "hook": "🔥 파미셀이 엔비디아의 차세대 AI 서버 핵심 부품용 소재를 독점 공급한다는 소식입니다. 국내 소재 기술의 큰 쾌거입니다.",
-        "detail": "엔비디아 블랙웰 가속기 등에 탑재되는 고성능 동박적층판(CCL)의 필수 핵심 원료를 두산 전자BG에 독점 공급합니다. AI 서버 수요 증가와 함께 국내 기업의 반도체 소재 공급망 내 지위도 급격히 상승하고 있습니다.",
-        "context": "#파미셀 #엔비디아 #반도체 #AI서버",
-        "question": "국산 소재 기업들이 글로벌 AI 하드웨어 생태계에서 독점 지위를 계속 넓힐까요?",
-        "poll_options": ["수혜 장기화", "경쟁사 진입 우려"]
-      }
-    },
-    {
-      "company": "레드햇",
-      "theme": "redhat",
-      "status": "official",
-      "title": "레드햇 “AI 플랫폼 경쟁 본격화…개방형 오픈소스가 핵심”",
-      "body": "글로벌 오픈소스 솔루션 기업 레드햇이 생성형 AI 시대의 생존 전략으로 특정 모델이나 벤더에 종속되지 않는 '개방형 AI 운영 플랫폼'을 제시했습니다. AI 추론을 위한 최신 RHEL AI 및 오픈시프트 AI 플랫폼을 통해 기업이 자율적으로 인프라를 통제하고 다양한 하드웨어 자원을 유연하게 분산 운영하는 에이전틱 AI 생태계 구축을 적극 지원하겠다는 전략입니다.",
-      "source": "전자신문 보도 기준",
-      "image_search": "red hat open source cloud technology server",
-      "image_url": "",
-      "related_urls": [
-        "https://www.etnews.com/20260615000049",
-        "https://zdnet.co.kr/view/?no=20260311142512"
-      ],
-      "colors": {
-        "bg": "#2b0000",
-        "soft": "#471010",
-        "ink": "#fee2e2"
-      },
-      "threads": {
-        "hook": "💡 특정 빅테크 AI 모델에의 종속을 탈피할 대안, 레드햇이 '개방형 오픈소스 AI 플랫폼'을 전략적 승부수로 내걸었습니다.",
-        "detail": "RHEL AI와 오픈시프트 AI를 통해 다양한 클라우드 및 하드웨어 가속기 환경을 효율적으로 운영하는 방안을 발표했습니다. 하드웨어와 소프트웨어의 투명한 개방이 기업들의 AI 인프라 비용 부담을 획기적으로 낮출 핵심 열쇠가 될 전망입니다.",
-        "context": "#레드햇 #오픈소스 #인공지능 #클라우드",
-        "question": "기업들이 독점적인 상용 AI 모델 대신 개방형 오픈소스 AI를 더 많이 선택할까요?",
-        "poll_options": ["오픈소스가 대세", "상용 모델 중심 유지"]
+        "hook": "🤝 OpenAI가 단순히 모델 판매를 넘어 직접 글로벌 파트너십 허브를 구축합니다. 1억 5천만 달러를 투자해 30만 명의 기업 AI 컨설턴트를 키우겠다고 선언했습니다.",
+        "detail": "기술이 있어도 이를 실제 비즈니스에 녹여내지 못하는 대기업들의 병목을 없애기 위함입니다. 컨설팅 펌, 시스템 통합(SI) 기업들과 손을 잡고 모델 최적화와 솔루션 보급에 박차를 가합니다.",
+        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #오픈AI #비즈니스모델 #AI컨설팅",
+        "question": "오픈AI의 30만 AI 전문가 양성 계획이 기업들의 생성형 AI 도입 속도를 획기적으로 올릴까요?",
+        "poll_options": [
+          "도입 속도 획기적 증가",
+          "기존 SI 업체의 한계 예상",
+          "일부 대기업 중심 편중"
+        ]
       }
     }
   ]

@@ -330,8 +330,11 @@ def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None
         poll_attachment = {}
         option_keys = ["option_a", "option_b", "option_c", "option_d"]
         for k, opt in zip(option_keys, poll_options[:4]):
+            encoded = opt.encode('utf-8')
+            if len(encoded) > 24:
+                opt = encoded[:24].decode('utf-8', errors='ignore').strip()
             poll_attachment[k] = opt
-        payload["poll_attachment"] = json.dumps(poll_attachment)
+        payload["poll_attachment"] = json.dumps(poll_attachment, ensure_ascii=False)
 
     # 컨테이너 생성
     res = requests.post(
@@ -357,48 +360,82 @@ def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None
         raise Exception(f"발행 실패: {pub_data}")
 
 
-def build_thread_chain_from_card(card):
-    """news_data.json의 card 데이터에서 Threads 체인 텍스트 생성"""
+def build_thread_single_from_card(card):
+    """news_data.json의 card 데이터에서 Threads 단일 포스트 텍스트 생성 (500자 이내)"""
     status_emoji = "✅" if card["status"] == "official" else "📰"
     company = card["company"]
 
-    # threads 필드가 있으면 사용, 없으면 자동 생성
     if "threads" in card:
         t = card["threads"]
-        chain = [
-            t.get("hook", ""),
-            t.get("detail", ""),
-            t.get("context", ""),
-            t.get("question", ""),
-        ]
-        return [item for item in chain if item.strip()]
-
-    # 자동 생성 폴백
-    return [
-        # Hook (관심 유도)
-        f"🔔 {company} 소식이 들어왔습니다.\n\n"
-        f"📌 {card['title']}",
-
-        # Detail (핵심 사실)
-        f"{status_emoji} [{company}] {card['title']}\n\n"
-        f"{card['body']}",
-
-        # Source (출처)
-        f"📎 {card['source']}\n\n"
-        f"#IT뉴스 #AI뉴스 #{company.replace(' ', '').replace('/', '')} #테크트렌드",
-    ]
+        hook = t.get("hook", "").strip()
+        detail = t.get("detail", "").strip()
+        context = t.get("context", "").strip()
+        question = t.get("question", "").strip()
+        
+        parts = []
+        if hook: parts.append(hook)
+        if detail: parts.append(detail)
+        if context: parts.append(context)
+        if question: parts.append(question)
+        
+        single_text = "\n\n".join(parts)
+    else:
+        # 자동 생성 폴백 (500자 이내로 정돈)
+        single_text = (
+            f"🔔 {status_emoji} [{company}] {card['title']}\n\n"
+            f"{card['body']}\n\n"
+            f"📎 출처: {card['source']}\n"
+            f"#IT뉴스 #AI뉴스 #{company.replace(' ', '').replace('/', '')} #테크트렌드"
+        )
+        
+    # 만약 500자 제한을 초과하는 경우 안전하게 슬라이싱
+    if len(single_text) > 490:
+        single_text = single_text[:487] + "..."
+        
+    return single_text
 
 
 def publish_threads(news_cards, date):
-    """각 뉴스 카드별로 Threads 체인(답글 연결) 게시"""
-    print("\n  [Threads] 체인 게시 시작...")
+    """각 뉴스 카드별로 Threads 단일 포스트 게시"""
+    print("\n  [Threads] 단일 포스트 게시 시작...")
     user_id = get_threads_user_id()
     print(f"    User ID: {user_id}")
 
     results = []
     for i, card in enumerate(news_cards):
         company = card["company"]
-        chain_texts = build_thread_chain_from_card(card)
+        post_text = build_thread_single_from_card(card)
+
+        print(f"\n    [{i+1}/{len(news_cards)}] {company} (단일 포스트)")
+
+        try:
+            poll_opts = None
+            if "threads" in card and "poll_options" in card["threads"]:
+                poll_opts = card["threads"]["poll_options"]
+                print(f"      (투표 활성화: {poll_opts})")
+                
+            post_id = create_and_publish_thread(user_id, post_text, reply_to_id=None, poll_options=poll_opts)
+            print(f"      ✓ ID: {post_id}")
+
+            results.append({
+                "company": company,
+                "root_id": post_id,
+                "chain_count": 1,
+                "status": "success",
+            })
+            print(f"      ✓ {company} 게시 완료")
+
+        except Exception as e:
+            print(f"      ✗ 실패: {e}")
+            results.append({
+                "company": company,
+                "error": str(e),
+                "status": "failed",
+            })
+
+        time.sleep(5)
+
+    success = sum(1 for r in results if r["status"] == "success")chain_from_card(card)
 
         print(f"\n    [{i+1}/{len(news_cards)}] {company} (체인 {len(chain_texts)}개)")
 
@@ -496,14 +533,24 @@ def send_telegram_image(image_path, caption=""):
     if not os.path.exists(image_path):
         return
     print("  [Telegram] 콘택트 시트 전송...")
+    file_size = os.path.getsize(image_path)
+    
+    if file_size <= 10 * 1024 * 1024:
+        method = "sendPhoto"
+        file_key = "photo"
+    else:
+        print(f"    ⚠ 파일 크기가 {file_size} bytes로 10MB를 초과하여 sendDocument로 전송합니다.")
+        method = "sendDocument"
+        file_key = "document"
+        
     with open(image_path, "rb") as f:
         res = requests.post(
-            f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendPhoto",
+            f"https://api.telegram.org/bot{TG_BOT_TOKEN}/{method}",
             data={"chat_id": TG_CHAT_ID, "caption": caption},
-            files={"photo": f},
+            files={file_key: f},
         )
     if res.json().get("ok"):
-        print(f"  ✓ 콘택트 시트 전송 완료")
+        print(f"  ✓ 콘택트 시트 전송 완료 ({method})")
     else:
         print(f"  ✗ 이미지 전송 실패: {res.json()}")
 

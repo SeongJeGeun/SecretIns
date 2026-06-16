@@ -116,5 +116,65 @@
     ],
     "threads_count": 5,
     "telegram": true
+  },
+  {
+    "date": "2026-06-16",
+    "mode": "daily",
+    "published_at": "2026-06-16T14:24:49.207508",
+    "instagram_id": "18083838935543926",
+    "threads": [],
+    "threads_count": 0,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-16",
+    "mode": "daily",
+    "published_at": "2026-06-16T14:48:34.438482",
+    "instagram_id": null,
+    "threads": [],
+    "threads_count": 0,
+    "telegram": true
+  },
+  {
+    "date": "2026-06-16",
+    "mode": "daily",
+    "published_at": "2026-06-16T14:57:43.205374",
+    "instagram_id": null,
+    "threads": [
+      {
+        "company": "앤비디아",
+        "root_id": "17902419711447339"
+      },
+      {
+        "company": "앤스로픽",
+        "root_id": "18118613761694201"
+      },
+      {
+        "company": "스페이스X",
+        "root_id": "17968461551917852"
+      },
+      {
+        "company": "구글",
+        "root_id": "18027284333818267"
+      },
+      {
+        "company": "마이크로소프트",
+        "root_id": "18040490375610944"
+      },
+      {
+        "company": "PwC",
+        "root_id": "18119281606774567"
+      },
+      {
+        "company": "비바테크",
+        "root_id": "18169657072434738"
+      },
+      {
+        "company": "오픈AI",
+        "root_id": "17867386974562344"
+      }
+    ],
+    "threads_count": 8,
+    "telegram": true
   }
 ]
