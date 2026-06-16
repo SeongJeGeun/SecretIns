@@ -17,19 +17,8 @@ import subprocess
 import argparse
 import math
 
-try:
-    import requests
-except ImportError:
-    print("requests 패키지 설치 중...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
-    import requests
-
-try:
-    from PIL import Image
-except ImportError:
-    print("Pillow 패키지 설치 중...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
-    from PIL import Image
+import requests
+from PIL import Image
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(SCRIPT_DIR, "template")
@@ -238,16 +227,10 @@ def download_and_resize(url, out_path, w=1080, h=702):
         return False
 
 
-def generate_placeholder(out_path, color, w=1080, h=702):
-    """이미지를 찾지 못했을 때 단색 플레이스홀더 생성"""
-    img = Image.new("RGB", (w, h), color)
-    img.save(out_path, "PNG")
-    print(f"    ⚠ 플레이스홀더 생성 ({color})")
-
-
 def download_images(data, output_dir):
     assets_dir = os.path.join(output_dir, "assets")
     os.makedirs(assets_dir, exist_ok=True)
+    missing_images = []
 
     # 템플릿 고정 에셋 복사 (커버, CTA)
     tmpl_assets = os.path.join(TEMPLATE_DIR, "assets")
@@ -292,11 +275,16 @@ def download_images(data, output_dir):
             ok = download_and_resize(url, img_path)
             if not ok:
                 print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={card['company']}, title={card['title']}, query={query}")
-                generate_placeholder(img_path, card["colors"]["bg"])
+                missing_images.append(img_file)
         else:
             print(f"    ✗ 검색 결과 없음")
             print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={card['company']}, title={card['title']}, query={query}")
-            generate_placeholder(img_path, card["colors"]["bg"])
+            missing_images.append(img_file)
+
+    if missing_images:
+        print(f"  ✗ 이미지 누락으로 빌드를 중단합니다: {', '.join(missing_images)}")
+        return False
+    return True
 
 
 # ─────────────────────────────────────────────
@@ -483,7 +471,8 @@ def main():
     generate_css(data, output_dir)
 
     print(f"\n[3/6] 이미지 확보")
-    download_images(data, output_dir)
+    if not download_images(data, output_dir):
+        sys.exit(1)
 
     print(f"\n[4/6] PNG 렌더링")
     export_pngs(data, output_dir)
@@ -514,4 +503,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
