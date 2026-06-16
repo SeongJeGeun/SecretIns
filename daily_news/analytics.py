@@ -221,7 +221,7 @@ def send_telegram_report(analysis):
         f"  - 노출(Impressions): {ig.get('impressions', 0):,}회\n"
         f"  - 반응(좋아요/댓글): {ig.get('likes', 0)} / {ig.get('comments', 0)}\n"
         f"  - 저장수(Saved): {ig.get('saved', 0)}회\n\n"
-        f"🧵 <b>Threads 체인 성과 (총 {th.get('total_posts_analyzed', 0)}건):</b>\n"
+        f"🧵 <b>Threads 텍스트 포스트 성과 (총 {th.get('total_posts_analyzed', 0)}건):</b>\n"
         f"  - 총 반응(좋아요/답글): {th.get('total_likes', 0)} / {th.get('total_replies', 0)}\n"
         f"  - 최고 반응 토픽: {', '.join(analysis.get('top_performing_companies', [])) or '없음'}\n"
         f"{'─' * 30}\n"
@@ -304,9 +304,9 @@ def main():
     ig_stats = get_instagram_media_stats(ig_id)
     print(f"      - 결과: Reach={ig_stats['reach']}, Saved={ig_stats['saved']}, Likes={ig_stats['likes']}")
     
-    # 2. Threads 체인 데이터 수집
+    # 2. Threads 텍스트 포스트 데이터 수집
     threads_stats_list = []
-    print("    🧵 Threads 체인 데이터 수집 중...")
+    print("    🧵 Threads 텍스트 포스트 데이터 수집 중...")
     for th in threads:
         comp = th.get("company", "Unknown")
         root_id = th.get("root_id")
@@ -328,9 +328,5 @@ def main():
     # 4. 텔레그램 결과 보고
     send_telegram_report(analysis)
     
-    print("=" * 60)
-    print("  ✅ 성과 수집 및 분석 업무 완료!")
-    print("=" * 60 + "\n")
-
 if __name__ == "__main__":
     main()
