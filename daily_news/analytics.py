@@ -39,20 +39,31 @@ def load_history():
     return []
 
 def get_instagram_media_stats(media_id):
-    """인스타그램 미디어의 좋아요, 댓글 수 및 인사이트 수집"""
+    """인스타그램 미디어의 좋아요, 댓글 수 및 인사이트 수집 (본인 댓글 제외)"""
     stats = {"likes": 0, "comments": 0, "reach": 0, "impressions": 0, "saved": 0}
     if not IG_TOKEN or not media_id:
         return stats
     
-    # 1. 기본 메타데이터 (좋아요, 댓글 수)
+    # 1. 기본 메타데이터 (좋아요 수)
     try:
         url = f"https://graph.facebook.com/v19.0/{media_id}"
-        res = requests.get(url, params={"fields": "like_count,comments_count", "access_token": IG_TOKEN}, timeout=15)
+        res = requests.get(url, params={"fields": "like_count", "access_token": IG_TOKEN}, timeout=15)
         data = res.json()
         stats["likes"] = data.get("like_count", 0)
-        stats["comments"] = data.get("comments_count", 0)
     except Exception as e:
         print(f"      ⚠ 인스타 기본 정보 수집 실패: {e}")
+        
+    # 1-2. 개별 댓글을 조회하여 본인(mind_factory_news) 제외 순수 독자 댓글만 카운팅
+    try:
+        url = f"https://graph.facebook.com/v19.0/{media_id}/comments"
+        res = requests.get(url, params={"fields": "username", "access_token": IG_TOKEN}, timeout=15)
+        comments_data = res.json().get("data", [])
+        
+        self_username = os.getenv("INSTAGRAM_USERNAME", "mind_factory_news")
+        reader_comments = [c for c in comments_data if c.get("username") != self_username]
+        stats["comments"] = len(reader_comments)
+    except Exception as e:
+        print(f"      ⚠ 인스타 댓글 필터링 수집 실패: {e}")
         
     # 2. 인사이트 메트릭 (도달수, 노출수, 저장수)
     try:
@@ -78,15 +89,16 @@ def get_instagram_media_stats(media_id):
     return stats
 
 def get_threads_media_stats(root_id):
-    """스레드 미디어의 좋아요, 답글(댓글), 재공유 수 수집"""
+    """스레드 미디어의 좋아요, 답글(댓글), 재공유 수 수집 (본인 답글 제외)"""
     stats = {"likes": 0, "replies": 0, "reposts": 0}
     if not THREADS_TOKEN or not root_id:
         return stats
     
+    # 1. 기본 메트릭 수집 (likes, reposts)
     try:
         url = f"https://graph.threads.net/v1.0/{root_id}/insights"
         res = requests.get(url, params={
-            "metric": "likes,replies,reposts",
+            "metric": "likes,reposts",
             "access_token": THREADS_TOKEN
         }, timeout=15)
         data = res.json().get("data", [])
@@ -95,12 +107,22 @@ def get_threads_media_stats(root_id):
             val = metric.get("values", [{}])[0].get("value", 0)
             if name == "likes":
                 stats["likes"] = val
-            elif name == "replies":
-                stats["replies"] = val
             elif name == "reposts":
                 stats["reposts"] = val
     except Exception as e:
         print(f"      ⚠ 스레드 정보 수집 실패: {e}")
+        
+    # 2. 개별 replies 리스트를 불러와서 본인(mind_factory_news)이 작성한 답글은 제외
+    try:
+        url = f"https://graph.threads.net/v1.0/{root_id}/replies"
+        res = requests.get(url, params={"fields": "username", "access_token": THREADS_TOKEN}, timeout=15)
+        replies_data = res.json().get("data", [])
+        
+        self_username = "mind_factory_news"
+        reader_replies = [r for r in replies_data if r.get("username") != self_username]
+        stats["replies"] = len(reader_replies)
+    except Exception as e:
+        print(f"      ⚠ 스레드 답글 필터링 수집 실패: {e}")
         
     return stats
 
