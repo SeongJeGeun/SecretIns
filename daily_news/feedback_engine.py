@@ -38,27 +38,63 @@ def save_json(path, data):
 
 def main():
     print("=" * 60)
-    print("  글로벌 SNS 피드백 원고 반영 엔진 (10:00 AM Pre-flight)")
+    print("  글로벌 SNS 피드백 원고 반영 및 정합성 검증 엔진 (10:00 AM Pre-flight)")
     print("=" * 60)
 
     news_data = load_json(DATA_PATH)
     analytics = load_json(REPORT_PATH)
 
     if not news_data:
-        print("✗ news_data.json 파일이 존재하지 않습니다. 스킵합니다.")
-        sys.exit(0)
+        print("✗ news_data.json 파일이 존재하지 않거나 올바른 JSON 포맷이 아닙니다. 에러 차단.")
+        sys.exit(1)
+
+    # ── 0. JSON 필드 및 무결성 정적 검증 (Static Linter) ──
+    cards = news_data.get("cards", [])
+    if not cards:
+        print("✗ [Error] cards 리스트가 비어있습니다.")
+        sys.exit(1)
+
+    print(f"  ✓ 총 {len(cards)}개 카드 데이터 로드 완료. 무결성 정밀 검증 개시.")
+    for idx, card in enumerate(cards):
+        # 500자 한도 초과 검사 (Threads API 단일 포스트용)
+        title = card.get("title", "")
+        body = card.get("body", "")
+        th = card.get("threads", {})
+        
+        hook = th.get("hook", "")
+        detail = th.get("detail", "")
+        context = th.get("context", "")
+        question = th.get("question", "")
+        
+        full_text = f"{hook}\n\n{detail}\n\n{context}\n\n{question}"
+        if len(full_text) > 490:
+            print(f"  ⚠ [Warning] Card {idx+1} ({card.get('company')})의 스레드 텍스트가 {len(full_text)}자로 490자 초과. 배포 시 자동 슬라이싱 대기.")
+
+        # 필수 필드 누락 검사 및 자동 자가치유 (폴백 복구)
+        if not title:
+            card["title"] = "Global Tech Trend Update"
+        if not body:
+            card["body"] = "Details will be updated soon."
+        if "threads" not in card:
+            card["threads"] = {
+                "hook": f"Check out the latest tech update about {card.get('company', 'technology')}.",
+                "detail": body[:300],
+                "context": "#tech #ai",
+                "question": "What are your thoughts on this?",
+                "poll_options": ["Great", "Not bad"]
+            }
 
     if not analytics:
-        print("⚠ analytics_report.json이 없어 피드백 반영을 생략하고 원본 그대로 빌드합니다.")
+        print("⚠ analytics_report.json이 없어 피드백 반영을 생략하고 정합성 검증 결과만 저장합니다.")
+        save_json(DATA_PATH, news_data)
         sys.exit(0)
 
     target_date = analytics.get("target_date")
     print(f"  ✓ 분석 보고서 날짜: {target_date} 성과 반영 개시")
 
-    cards = news_data.get("cards", [])
     top_companies = analytics.get("top_performing_companies", [])
     
-    # ── 1. 성과 우수 회사/테마 카드 전면 배치 (우선 노출 순서 정렬) ──
+    # ── 1. 성과 우수 회사/테마 카드 전면 배치 ──
     if top_companies:
         print(f"  🔥 어제 성과 우수 토픽: {top_companies}")
         matched_cards = []
@@ -81,19 +117,17 @@ def main():
                 
         if matched_cards:
             print(f"    - 인기 토픽 카드 {len(matched_cards)}개를 전면 슬라이드로 배치 변경 완료.")
-            # 인기 카드를 우선순위로 정렬하여 cards 리스트 재구성
             news_data["cards"] = matched_cards + unmatched_cards
             cards = news_data["cards"]
 
     # ── 2. 해시태그 및 훅 최적화 ──
     for idx, card in enumerate(cards):
         company = card.get("company", "")
-        # 스레드 해시태그 최적화
         if "threads" in card:
             th = card["threads"]
             context = th.get("context", "")
             
-            # 해시태그에서 무분별한 여러 개를 지우고, 가이드라인에 따라 5개 이하 핵심 키워드로 강제 조율
+            # 해시태그 압축 및 클린업
             tags = [t.strip() for t in context.split("#") if t.strip()]
             
             # 어제 우수했던 토픽 태그 우선 추가
@@ -102,18 +136,18 @@ def main():
                 if clean_tc and clean_tc not in tags:
                     tags.insert(0, clean_tc)
             
-            # 5개 이하로 압축
+            # 5개 이하로 최적화
             optimized_tags = tags[:5]
             th["context"] = " ".join([f"#{t}" for t in optimized_tags])
             
-            # 훅 카피에 숫자가 없고 공식/보도 등의 구체적 사실이 있다면 앞에 팩트 라벨 강조
+            # 훅 카피 개선 (구체적인 팩트 수치가 들어갈 수 있도록 포맷 수정)
             hook = th.get("hook", "")
-            if not any(char.isdigit() for char in hook) and "🚨" not in hook and "🔔" not in hook:
+            if not any(char.isdigit() for char in hook) and "[Fact Check]" not in hook:
                 th["hook"] = f"📢 [Fact Check] {hook}"
 
     # 최종 저장
     save_json(DATA_PATH, news_data)
-    print("  ✓ news_data.json 원고 피드백 반영 및 오버라이딩 성공!")
+    print("  ✓ news_data.json 원고 피드백 반영 및 무결성 검증 완료!")
     print("=" * 60 + "\n")
 
 if __name__ == "__main__":

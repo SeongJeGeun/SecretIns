@@ -91,22 +91,48 @@
 Threads는 Instagram 카드뉴스 배포와 별도 채널로 취급합니다.
 
 - **종합 요약 1개 게시 금지**: "오늘의 뉴스 브리핑", "오늘의 주요 뉴스"처럼 전체 뉴스를 한 게시물로 요약하는 방식은 폐기합니다.
-- **기본 단위**: **뉴스 카드 1개 = Threads 게시물 1개**입니다.
-- **작성 구조**:
-  1. 뉴스 핵심 사실
-  2. 배경 설명
-  3. 질문 1개
-- **분량**: 게시물 1개당 150~300자를 기준으로 합니다.
-- **목표 반응**: 좋아요보다 댓글, 답글, 재공유, 인용을 우선합니다.
-- **금지 사항**: 정치 편향, 선동, 투자 권유, 공포 마케팅, Instagram 캡션 복사, 카드뉴스 이미지 업로드를 금지합니다.
 
----
+### 3-8. 다차원 융합 분석 파이프라인 설계도 (FUSION_PIPELINE_V3)
+본 시스템은 단순 요약과 숏폼 배포를 지양하고, 교차 검증된 신뢰성 높은 뉴스를 다차원적으로 융합 분석하여 최상의 고품질 카드뉴스로 배포하기 위한 파이프라인으로 구성됩니다.
 
-### 3-4. 카드뉴스 디자인 템플릿 정책 (CARD_NEWS_TEMPLATE_V2)
-고정 템플릿 + JSON 데이터 분리 구조로, `news_data.json`만 작성하면 `build.py`가 카드뉴스를 자동 생성합니다.
+```mermaid
+graph TD
+    A["1. 수집 & 1차 빌드 (10:00 AM)
+    - collect_news.py로 기사 수집
+    - AI: topic_weights.json 가중치 반영
+    - AI: 6~10개 핵심 뉴스 선정
+    - fuse_news.py로 이미지 융합
+    - build.py로 1차 HTML/PNG 렌더링"]
+    
+    B["2. 성과 분석 (12:00 PM)
+    - analytics.py 실행
+    - 전날 14시 게시물 도달/참여 메트릭 수집
+    - 텔레그램 성과 보고 전송
+    - analytics_report.json 생성"]
+    
+    C["3. 피드백 반영 & 배포 (14:00 PM)
+    - AI: analytics_report.json 기반 직접 리라이팅
+    - feedback_engine.py 실행 (무결성 검증)
+    - build.py 재실행 (최종 PNG 재생성)
+    - publish.py 실행 (배포 및 로컬 청소)"]
+    
+    D["4. 독자 대댓글 소통 (16:00 PM)
+    - comment_manager.py --fetch로 댓글 수집
+    - AI: 독자 언어 감응 개별 대댓글 답변 작성
+    - comment_manager.py --reply로 실시간 답글 전송"]
 
-- **고정 템플릿 위치**: `media-os/daily_news/template/` (style.css, export_cards.js, assets/)
-  - 이 폴더의 파일은 **절대 수정하지 않습니다**. 디자인 변경이 필요한 경우에만 포워드의 승인 후 수정합니다.
+    E["5. 성과 자가치유 (18:00 PM)
+    - AI: analytics_report.json 최종 결산분석
+    - AI: 잘 터지는 키워드 도출 후 topic_weights.json 갱신
+    - 알고리즘 시프트 및 치유 루프 완료"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E -.->|"익일 뉴스 수집에 가중치 전달"| A
+```
+
 - **카드 구조**: 커버 1장 + 뉴스 N장 + CTA 아웃트로 1장 (1+N+1)
 - **카드 해상도**: 가로 1080px × 세로 1350px
 
@@ -165,35 +191,6 @@ python3 build.py --data news_data.json --publish
 
 ---
 
-### 3-8. 다차원 융합 분석 파이프라인 설계도 (FUSION_PIPELINE_V2)
-본 시스템은 단순 요약과 숏폼 배포를 지양하고, 교차 검증된 신뢰성 높은 뉴스를 다차원적으로 융합 분석하여 최상의 고품질 카드뉴스로 배포하기 위한 파이프라인으로 구성됩니다.
-
-```mermaid
-graph TD
-    A["1. 수집 & 1차 빌드 (10:00 AM)
-    - collect_news.py로 기사 수집
-    - AI: 6~10개 핵심 뉴스 선정 (숏폼 배제, 6개 고정 금지)
-    - fuse_news.py로 이미지 융합
-    - build.py로 1차 HTML/PNG 렌더링
-    - 이미지 누락 시 AI generate_image 보완"]
-    
-    B["2. 성과 분석 (12:00 PM)
-    - analytics.py 실행
-    - 전날 14시 게시물의 API 도달/참여 메트릭 수집
-    - 텔레그램 성과 보고 전송
-    - analytics_report.json 생성 (익일 피드백용)"]
-    
-    C["3. 피드백 반영 & 배포 (14:00 PM)
-    - feedback_engine.py 실행 (전날 성과 피드백 반영)
-    - build.py 재실행 (최종 최적화 PNG 재생성)
-    - publish.py 실행 (인스타/스레드 배포 및 텔레그램 보고)
-    - 로컬 빌드 파일 및 다운로드 청소"]
-
-    A --> B
-    B --> C
-    C -.->|"익일 피드백 데이터 전달"| B
-```
-
 - **파이프라인의 핵심 가치**:
   1. **숏폼 전면 배제**: 순간의 후킹용 숏폼보다, 지적 깊이가 있는 캐러셀 카드뉴스와 깊이 있는 스레드 답글 체인의 가치를 우선시합니다.
   2. **교차 정합성 보장**: 하나의 기사만 인용하지 않고, 최소 2개 매체의 교차 보도를 통해 검증된 팩트만을 다룹니다.
@@ -203,30 +200,33 @@ graph TD
 ---
 
 ## 4. 크론(Cron) 자동화 스케줄 및 표준 실행 가이드
-본 미디어 OS는 사용자의 Scheduled Tasks 크론 스케줄링에 맞춰 다음 3단계 파이프라인으로 매일 자동 가동됩니다.
+본 미디어 OS는 사용자의 Scheduled Tasks 크론 스케줄링에 맞춰 다음 5단계 파이프라인으로 매일 자동 가동됩니다.
 
 ### Step 1. 매일 오전 10:00 (뉴스 수집 및 1차 원고 기획)
 이전 24시간 동안의 테크 정보를 수집하고 원고를 1차 빌드합니다.
 ```text
-1. 최근 24시간 글로벌 IT/AI 뉴스를 조사하되 숏폼 관련 토픽은 제외해. 중요도 및 발표량에 맞춰 최소 6개에서 최대 10개의 핵심 주제를 선정하고(6개 고정 금지), 각 주제별로 2개 이상의 교차 기사를 검색해 related_urls에 담아 news_data.json을 작성해. 글로벌 도달률을 높이기 위해 news_data.json 내의 모든 텍스트(제목, 본문, threads 객체 내의 hook/detail/context/question, 그리고 poll_options 등)는 100% 영문(English)으로만 신규 작성해야 해. 이때 스레드 독자 참여 유도를 위한 2~4개의 투표 선택지(각 25자 이내)도 threads.poll_options 리스트에 반드시 영문으로 작성해줘. (대형 이벤트 여부에 따라 daily/event 모드 자동 판별)
-2. python3 daily_news/fuse_news.py 를 실행하여 교차 기사들로부터 고화질(500px 이상) 실제 실사 이미지를 자동으로 융합 및 매칭해.
-3. python3 daily_news/build.py --data daily_news/news_data.json 을 1차로 실행해.
-4. 만약 이미지를 찾지 못해 터미널에 [MISSING_IMAGE_TRIGGER] 로그가 발생하면, 너의 내장된 이미지 생성 기능(generate_image)을 사용해 기사 맥락에 딱 맞는 실사풍 이미지를 직접 생성해서 보완해.
+1. 최근 24시간 글로벌 IT/AI 뉴스를 조사하되 숏폼 관련 토픽은 제외해. 
+2. daily_news/topic_weights.json 파일의 키워드 가중치를 읽고, 수집된 기사 중 높은 가중치 키워드를 담은 뉴스가 있다면 이를 최우선(1순위)으로 반영해 최소 6개에서 최대 10개의 핵심 주제를 선정하고(6개 고정 금지), 각 주제별로 2개 이상의 교차 기사를 검색해 related_urls에 담아 news_data.json을 작성해.
+3. 글로벌 도달률을 높이기 위해 news_data.json 내의 모든 텍스트(제목, 본문, threads 객체 내의 hook/detail/context/question, 그리고 poll_options 등)는 100% 영문(English)으로만 신규 작성해야 해. 이때 스레드 독자 참여 유도를 위한 2~4개의 투표 선택지(각 25자 이내)도 threads.poll_options 리스트에 반드시 영문으로 작성해줘.
+4. python3 daily_news/fuse_news.py 를 실행하여 교차 기사들로부터 고화질(500px 이상) 실제 실사 이미지를 자동으로 융합 및 매칭해.
+5. python3 daily_news/build.py --data daily_news/news_data.json 을 1차로 실행해.
+6. 만약 이미지를 찾지 못해 터미널에 [MISSING_IMAGE_TRIGGER] 로그가 발생하면, 너의 내장된 이미지 생성 기능(generate_image)을 사용해 기사 맥락에 딱 맞는 실사풍 이미지를 직접 생성해서 보완해.
 ```
 
 ### Step 2. 매일 오후 12:00 (성과 분석 및 피드백 생성)
 배포된 콘텐츠의 도달 및 참여 효율을 분석하여 다음 날 배포에 전달할 가이드를 생산합니다.
 ```text
-1. python3 daily_news/analytics.py 를 실행하여 최근 발행된 게시물들의 실시간 도달률, 저장수, 좋아요, 답글 수 통계를 API로 역추적해.
+1. python3 daily_news/analytics.py 를 실행하여 최근 발행된 게시물들의 실시간 도달률, 저장수, 좋아요, 답글 수 통계를 API로 역추적하고, 자가치유를 위한 topic_weights.json 가중치를 갱신해.
 2. 텔레그램으로 성과 보고서가 전송되었는지 확인하고, 생성된 daily_news/analytics_report.json이 다음 날 배포 시 정상 참조되도록 유지해.
 ```
 
 ### Step 3. 매일 오후 14:00 (성과 피드백 반영 및 최종 배포)
 전날 12시(정오) 보고서를 바탕으로 원고를 자동 최적화한 뒤 SNS에 최종 발행합니다.
 ```text
-1. python3 daily_news/feedback_engine.py 를 실행하여 전날 분석된 피드백을 news_data.json에 오버라이딩 반영해.
-2. 피드백이 반영된 원고를 기반으로 python3 daily_news/build.py --data daily_news/news_data.json 을 다시 실행해 최종 PNG 파일들을 재생성해.
-3. 오늘 날짜(KST 기준 YYYY-MM-DD 형식)를 직접 스스로 올바르게 판단한 뒤, python3 daily_news/publish.py --date [오늘날짜] 를 최종 실행하여 인스타그램/스레드 배포를 진행하고, 텔레그램 보고 및 로컬 청소를 완료해.
+1. daily_news/analytics_report.json을 직접 읽고 분석해. 너의 내장된 LLM 추론 능력을 사용해, 피드백에 맞춰 당일 10:00에 생성했던 daily_news/news_data.json 원고의 영어 제목과 스레드 훅(hook)을 더 흡입력 있고 도달율이 극대화되도록 직접 리라이팅(Rewriting)하여 갱신해.
+2. python3 daily_news/feedback_engine.py 를 실행하여 리라이팅된 news_data.json의 해시태그 최적화 및 JSON 정합성 무결성 검증을 마쳐.
+3. 피드백이 반영된 원고를 기반으로 python3 daily_news/build.py --data daily_news/news_data.json 을 다시 실행해 최종 PNG 파일들을 재생성해.
+4. 오늘 날짜(KST 기준 YYYY-MM-DD 형식)를 직접 스스로 올바르게 판단한 뒤, python3 daily_news/publish.py --date [오늘날짜] 를 최종 실행하여 인스타그램/스레드 배포를 진행하고, 텔레그램 보고 및 로컬 청소를 완료해.
 ```
 
 ### Step 4. 매일 오후 16:00 (독자 댓글 분석 및 소통)
@@ -235,6 +235,14 @@ graph TD
 1. python3 daily_news/comment_manager.py --fetch 를 실행하여 오늘 등록된 미답변 독자 댓글 목록을 수집하고 화면에 출력해.
 2. 출력된 미답변 댓글들을 하나씩 분석하여, 독자 댓글이 달린 원본 언어(영어, 한국어 등)를 자동으로 판별해 해당 독자 언어로 동일하게 작성해줘. IT/AI 뉴스 채널의 친절하고 위트 있으며 전문성 있는 어조(해당 언어 기준 100자 내외)로 개별 대댓글 답변 문장을 작성해.
 3. 각 댓글마다 python3 daily_news/comment_manager.py --reply --platform [instagram/threads] --id [댓글ID] --message "[답변내용]" 을 실행하여 실시간으로 답글을 실서버에 발행하고 텔레그램 보고가 발송되는지 확인해.
+```
+
+### Step 5. 매일 오후 18:00 (성과 자가치유 및 알고리즘 튜닝)
+도달률 저조 등 성과적 질병을 스스로 치료하기 위해 노출이 극대화된 주제를 최종 결산하고 알고리즘 가중치를 업데이트합니다.
+```text
+1. 오늘 생성된 daily_news/analytics_report.json 보고서를 자세히 분석해.
+2. 너의 내장된 추론 지능으로 독자들이 가장 적극적으로 반응한(Reach, Likes, Saved가 높은) 주제의 영문 회사/테마 명사를 도출해.
+3. 도출된 인기 테마는 가중치를 +0.2 상향(최대 2.0)하고, 최근에 노출이 저조했던 기존 테마는 0.9배 감쇠(최소 1.0)하여 daily_news/topic_weights.json의 가중치를 직접 갱신해 저장해. 이 가중치 사전은 다음 날 오전 10:00 기사 수집 및 자동 큐레이션 시에 핵심 뼈대가 되어 알고리즘 노출을 자가치유하게 돼.
 ```
 
 ---

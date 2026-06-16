@@ -127,13 +127,52 @@ def get_threads_media_stats(root_id):
     return stats
 
 def analyze_performance(ig_stats, threads_stats_list, date, mode):
-    """수집된 성과 데이터를 분석하여 다음 날 10시 배포에서 사용할 피드백 생성"""
+    """수집된 성과 데이터를 분석하여 다음 날 10시 배포에서 사용할 피드백 생성 및 가중치 업데이트"""
     total_threads_likes = sum(t["likes"] for t in threads_stats_list)
     total_threads_replies = sum(t["replies"] for t in threads_stats_list)
     
-    # 성과 우수 테마/회사 판별 (단순 룰 베이스 및 피드백 카피 제안)
+    # 성과 우수 테마/회사 판별 (도달 및 반응 합산 기준)
     top_threads = sorted(threads_stats_list, key=lambda x: x["likes"] + x["replies"] * 2, reverse=True)
     top_performing_companies = [t["company"] for t in top_threads[:2] if "company" in t]
+    
+    # ── 자가치유 가중치 사전(topic_weights.json) 업데이트 로직 ──
+    weights_path = os.path.join(SCRIPT_DIR, "topic_weights.json")
+    weights_data = {"updated_at": datetime.datetime.now().isoformat(), "weights": {}}
+    
+    if os.path.exists(weights_path):
+        try:
+            with open(weights_path, "r", encoding="utf-8") as f:
+                weights_data = json.load(f)
+        except Exception:
+            pass
+            
+    current_weights = weights_data.get("weights", {})
+    
+    # 1. 성과 우수 키워드는 가중치 증가 (+0.2, 최대 2.0)
+    for comp in top_performing_companies:
+        key = comp.lower().strip()
+        if key:
+            current_weights[key] = min(round(current_weights.get(key, 1.0) + 0.2, 2), 2.0)
+            
+    # 2. 성과 미진/기존 키워드는 서서히 감쇠 (decay rate 0.9, 최소 1.0)
+    decayed_weights = {}
+    for key, val in current_weights.items():
+        if key not in [c.lower().strip() for c in top_performing_companies]:
+            new_val = round(val * 0.9, 2)
+            if new_val >= 1.05: # 1.05보다 작아지면 제거 혹은 기본값 회귀
+                decayed_weights[key] = new_val
+        else:
+            decayed_weights[key] = val
+            
+    weights_data["weights"] = decayed_weights
+    weights_data["updated_at"] = datetime.datetime.now().isoformat()
+    
+    try:
+        with open(weights_path, "w", encoding="utf-8") as f:
+            json.dump(weights_data, f, ensure_ascii=False, indent=2)
+        print(f"      ✓ 자가치유 가중치(topic_weights.json) 갱신 완료: {decayed_weights}")
+    except Exception as e:
+        print(f"      ⚠ topic_weights.json 저장 실패: {e}")
     
     # 피드백 카피 전략 제안
     hook_style = "어제 업로드에서 실시간 반응도가 높았던 테마는 " + ", ".join(top_performing_companies) + " 입니다. 10시 업로드 타이틀에 해당 키워드를 최우선 노출하고 구체적 팩트 수치를 명기하세요."
@@ -156,7 +195,7 @@ def analyze_performance(ig_stats, threads_stats_list, date, mode):
         "actionable_feedback": {
             "hook_style": hook_style,
             "hashtag_strategy": hashtag_strategy,
-            "recommended_themes": ["samsung", "ai", "anthropic", "government", "career"] # 피드백에 맞춰 가변 추천
+            "recommended_themes": list(decayed_weights.keys()) or ["samsung", "ai", "anthropic", "government", "career"]
         }
     }
     
