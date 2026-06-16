@@ -3,7 +3,7 @@
 Daily News Auto Publisher
 ==========================
 빌드 결과물을 Instagram, Threads, Telegram에 자동 게시합니다.
-Threads는 체인(답글 연결) 형식으로 게시합니다.
+Threads는 텍스트 포스트 형식으로 게시합니다.
 중복 업로드를 자동으로 방지합니다.
 
 Usage:
@@ -16,20 +16,10 @@ import sys
 import json
 import time
 import argparse
+import shutil
 
-try:
-    import requests
-except ImportError:
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
-    import requests
-
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "python-dotenv"])
-    from dotenv import load_dotenv
+import requests
+from dotenv import load_dotenv
 
 # .env 로드
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -302,7 +292,7 @@ def publish_instagram(image_urls, caption):
 
 
 # ============================================================
-# 3. Threads 체인 게시 (Hook → Detail → Context → Question)
+# 3. Threads 텍스트 포스트 게시
 # ============================================================
 def get_threads_user_id():
     res = requests.get(
@@ -316,7 +306,7 @@ def get_threads_user_id():
 
 
 def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None):
-    """Threads 게시물 1개를 생성하고 발행, media_id 반환"""
+    """Threads 텍스트 게시물 1개를 생성하고 발행, media_id 반환"""
     payload = {
         "media_type": "TEXT",
         "text": text,
@@ -326,7 +316,6 @@ def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None
         payload["reply_to_id"] = reply_to_id
 
     if poll_options:
-        import json
         poll_attachment = {}
         option_keys = ["option_a", "option_b", "option_c", "option_d"]
         for k, opt in zip(option_keys, poll_options[:4]):
@@ -361,7 +350,7 @@ def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None
 
 
 def build_thread_single_from_card(card):
-    """news_data.json의 card 데이터에서 Threads 단일 포스트 텍스트 생성 (500자 이내)"""
+    """news_data.json의 card 데이터에서 Threads 텍스트 포스트 생성 (500자 이내)"""
     status_emoji = "✅" if card["status"] == "official" else "📰"
     company = card["company"]
 
@@ -396,8 +385,8 @@ def build_thread_single_from_card(card):
 
 
 def publish_threads(news_cards, date):
-    """각 뉴스 카드별로 Threads 단일 포스트 게시"""
-    print("\n  [Threads] 단일 포스트 게시 시작...")
+    """각 뉴스 데이터별 Threads 텍스트 포스트 게시"""
+    print("\n  [Threads] 텍스트 포스트 게시 시작...")
     user_id = get_threads_user_id()
     print(f"    User ID: {user_id}")
 
@@ -406,7 +395,7 @@ def publish_threads(news_cards, date):
         company = card["company"]
         post_text = build_thread_single_from_card(card)
 
-        print(f"\n    [{i+1}/{len(news_cards)}] {company} (단일 포스트)")
+        print(f"\n    [{i+1}/{len(news_cards)}] {company} (텍스트 포스트)")
 
         try:
             poll_opts = None
@@ -420,7 +409,7 @@ def publish_threads(news_cards, date):
             results.append({
                 "company": company,
                 "root_id": post_id,
-                "chain_count": 1,
+                "post_count": 1,
                 "status": "success",
             })
             print(f"      ✓ {company} 게시 완료")
@@ -436,7 +425,7 @@ def publish_threads(news_cards, date):
         time.sleep(5)
 
     success = sum(1 for r in results if r["status"] == "success")
-    print(f"\n  ✓ Threads 단일 포스트 게시 완료: {success}/{len(news_cards)}개 성공")
+    print(f"\n  ✓ Threads 텍스트 포스트 게시 완료: {success}/{len(news_cards)}개 성공")
     return results
 
 
@@ -460,8 +449,8 @@ def send_telegram_report(date, mode, news_cards, ig_result, threads_results):
     if threads_results:
         t_success = sum(1 for r in threads_results if r["status"] == "success")
         t_total = len(threads_results)
-        chains = sum(r.get("chain_count", 0) for r in threads_results if r["status"] == "success")
-        threads_status = f"✅ {t_success}/{t_total}개 체인 게시 (총 {chains}개 포스트)"
+        posts = sum(r.get("post_count", 0) for r in threads_results if r["status"] == "success")
+        threads_status = f"✅ {t_success}/{t_total}개 텍스트 포스트 게시 (총 {posts}개 포스트)"
     else:
         threads_status = "⏭ 건너뜀"
 
@@ -514,6 +503,14 @@ def send_telegram_image(image_path, caption=""):
         print(f"  ✗ 이미지 전송 실패: {res.json()}")
 
 
+def has_successful_content_publish(ig_result, threads_results):
+    if ig_result:
+        return True
+    if threads_results:
+        return any(r.get("status") == "success" for r in threads_results)
+    return False
+
+
 # ============================================================
 # Main
 # ============================================================
@@ -542,7 +539,6 @@ def main():
             if os.path.exists(candidate):
                 data_path = candidate
                 break
-
     if not data_path or not os.path.exists(data_path):
         print(f"✗ news_data.json을 찾을 수 없습니다.")
         sys.exit(1)
@@ -567,13 +563,26 @@ def main():
             print(f"\n{'='*60}\n")
             sys.exit(0)
 
-    # ── 이미지 파일 수집 ──
-    png_files = sorted([
-        os.path.join(output_dir, f)
-        for f in os.listdir(output_dir)
-        if f.startswith(f"{date}_card_") and f.endswith(".png")
-    ])
-    print(f"\n  카드 이미지: {len(png_files)}장")
+    # ── 이미지 파일 사전 검증 ──
+    png_files = []
+    if not args.skip_instagram or not args.skip_telegram:
+        if not os.path.isdir(output_dir):
+            print(f"✗ output 디렉토리를 찾을 수 없습니다: {output_dir}")
+            sys.exit(1)
+
+        png_files = sorted([
+            os.path.join(output_dir, f)
+            for f in os.listdir(output_dir)
+            if f.startswith(f"{date}_card_") and f.endswith(".png")
+        ])
+        expected_count = len(cards) + 2
+        print(f"\n  카드 이미지: {len(png_files)}장")
+
+        if not args.skip_instagram and len(png_files) != expected_count:
+            print(f"✗ PNG 개수 불일치: {len(png_files)}장 발견, 예상 {expected_count}장")
+            sys.exit(1)
+    else:
+        print("\n  카드 이미지 검증 건너뜀")
 
     # ── Instagram ──
     ig_result = None
@@ -644,12 +653,14 @@ def main():
         print("\n  [Telegram] 건너뜀")
 
     # ── 게시 이력 기록 ──
-    record_publish(date, mode, ig_result, threads_results, telegram_ok)
+    if has_successful_content_publish(ig_result, threads_results):
+        record_publish(date, mode, ig_result, threads_results, telegram_ok)
+    else:
+        print("  ⚠ Instagram/Threads 게시 성공 항목이 없어 게시 이력 기록을 생략합니다.")
 
     # ── 로컬 파일 정리 (Clean up) ──
     if args.clean:
         try:
-            import shutil
             print("\n  [Clean up] 로컬 임시 파일 삭제 중...")
             if os.path.exists(build_dir):
                 shutil.rmtree(build_dir)
