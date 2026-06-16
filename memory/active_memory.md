@@ -112,6 +112,7 @@ Threads는 Instagram 카드뉴스 배포와 별도 채널로 취급합니다.
 
 #### 매일 변경하는 것: `news_data.json` 하나뿐
 - 각 뉴스 항목은 `theme`, `company`, `status`(official/reported), `title`, `body`, `source`, `image_search`, `colors`(bg, soft, ink) 필드를 포함합니다.
+- **글로벌 타겟팅**: 글로벌 시장과 알고리즘을 타겟으로 하여, 모든 원고 텍스트(제목, 본문, threads 멘트, 투표 선택지 등)는 100% 자연스럽고 세련된 영문(English)으로 작성되어야 합니다.
 - `threads` 객체를 추가하여 Threads 체인(hook, detail, context, question) 텍스트를 커스텀할 수 있습니다.
 - 최상위에 `"mode": "daily"` 또는 `"mode": "event"` 지정 가능
   - `event` 모드 시 `"event_title"` 속성을 추가하여 커버 제목을 오버라이드할 수 있습니다.
@@ -207,7 +208,7 @@ graph TD
 ### Step 1. 매일 오전 10:00 (뉴스 수집 및 1차 원고 기획)
 이전 24시간 동안의 테크 정보를 수집하고 원고를 1차 빌드합니다.
 ```text
-1. 최근 24시간 글로벌 IT/AI 뉴스를 조사하되 숏폼(숏츠, 릴스 등) 관련 가벼운 토픽은 제외해. 중요도 및 발표량에 맞춰 최소 6개에서 최대 10개의 핵심 주제를 선정하고(6개 고정 금지), 각 주제별로 2개 이상의 교차 기사를 검색해 related_urls에 담아 news_data.json을 작성해. 이때 각 뉴스 카드의 threads 객체 내부에 스레드 독자 참여 유도를 위한 2~4개의 투표 선택지(각 25자 이내)를 threads.poll_options 리스트로 반드시 작성해줘. (대형 이벤트 여부에 따라 daily/event 모드 자동 판별)
+1. 최근 24시간 글로벌 IT/AI 뉴스를 조사하되 숏폼 관련 토픽은 제외해. 중요도 및 발표량에 맞춰 최소 6개에서 최대 10개의 핵심 주제를 선정하고(6개 고정 금지), 각 주제별로 2개 이상의 교차 기사를 검색해 related_urls에 담아 news_data.json을 작성해. 글로벌 도달률을 높이기 위해 news_data.json 내의 모든 텍스트(제목, 본문, threads 객체 내의 hook/detail/context/question, 그리고 poll_options 등)는 100% 영문(English)으로만 신규 작성해야 해. 이때 스레드 독자 참여 유도를 위한 2~4개의 투표 선택지(각 25자 이내)도 threads.poll_options 리스트에 반드시 영문으로 작성해줘. (대형 이벤트 여부에 따라 daily/event 모드 자동 판별)
 2. python3 daily_news/fuse_news.py 를 실행하여 교차 기사들로부터 고화질(500px 이상) 실제 실사 이미지를 자동으로 융합 및 매칭해.
 3. python3 daily_news/build.py --data daily_news/news_data.json 을 1차로 실행해.
 4. 만약 이미지를 찾지 못해 터미널에 [MISSING_IMAGE_TRIGGER] 로그가 발생하면, 너의 내장된 이미지 생성 기능(generate_image)을 사용해 기사 맥락에 딱 맞는 실사풍 이미지를 직접 생성해서 보완해.
@@ -232,7 +233,7 @@ graph TD
 당일 배포된 피드와 스레드에 작성된 새로운 독자 댓글들을 수집해 AI로 개별 맞춤 대댓글을 작성합니다.
 ```text
 1. python3 daily_news/comment_manager.py --fetch 를 실행하여 오늘 등록된 미답변 독자 댓글 목록을 수집하고 화면에 출력해.
-2. 출력된 미답변 댓글들을 하나씩 분석하여, IT/AI 뉴스 채널의 친절하고 전문성 있는 어조(Korean, 100자 내외)로 개별 대댓글 답변 문장을 작성해.
+2. 출력된 미답변 댓글들을 하나씩 분석하여, 독자 댓글이 달린 원본 언어(영어, 한국어 등)를 자동으로 판별해 해당 독자 언어로 동일하게 작성해줘. IT/AI 뉴스 채널의 친절하고 위트 있으며 전문성 있는 어조(해당 언어 기준 100자 내외)로 개별 대댓글 답변 문장을 작성해.
 3. 각 댓글마다 python3 daily_news/comment_manager.py --reply --platform [instagram/threads] --id [댓글ID] --message "[답변내용]" 을 실행하여 실시간으로 답글을 실서버에 발행하고 텔레그램 보고가 발송되는지 확인해.
 ```
 
