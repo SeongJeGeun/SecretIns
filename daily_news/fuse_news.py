@@ -41,11 +41,11 @@ EXCLUDE_KEYWORDS = [
     "ave", "avenue", "toyota", "car-", "vehicle"
 ]
 
-# URL만으로 잡기 어려운 언론사/플랫폼 기본 공유 이미지 패턴
+# 도메인 전체가 아니라 기본 공유 이미지/사이트 기본 이미지로 추정되는 경로만 차단
 PUBLISHER_DEFAULT_PATTERNS = [
-    "sedaily", "seoul.co.kr", "seouleconomicdaily", "seoul-economic",
-    "crn.com", "crn-", "securityweek", "security-week",
-    "pressrelease", "press-release", "newsroom-default", "site-default"
+    "pressrelease", "press-release", "newsroom-default", "site-default",
+    "default-share", "default_share", "default-thumb", "default_thumb",
+    "media-default", "publisher-default", "article-default", "social-default"
 ]
 
 
