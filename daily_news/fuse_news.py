@@ -18,7 +18,7 @@ import json
 import time
 import urllib.request
 import urllib.parse
-from PIL import Image
+from PIL import Image, ImageStat
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(SCRIPT_DIR, "news_data.json")
@@ -27,13 +27,25 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
-# 기각할 이미지 파일명/키워드 패턴 (로고, 아이콘, 아바타, 배너 배제)
+# 기각할 이미지 파일명/키워드 패턴 (로고, 아이콘, 아바타, 배너, 기본 OG 이미지 배제)
 EXCLUDE_KEYWORDS = [
-    "logo", "icon", "banner", "avatar", "sprite", "nav", "menu", "footer", 
-    "button", "placeholder", "default", "spacer", "advertisement", "ad-",
+    "logo", "logos", "logotype", "wordmark", "brandmark", "branding", "brand-",
+    "icon", "favicon", "avatar", "sprite", "nav", "menu", "footer",
+    "button", "placeholder", "default", "noimage", "no-image", "spacer",
+    "advertisement", "advertorial", "ad-", "ad_", "ads/", "doubleclick",
     "theme", "widget", "arrow", "loading", "profile", "comment",
-    "ave", "avenue", "promo", "event", "popup", "ad_", "ad-", "main-banner", 
-    "sub-banner", "top-", "bottom-", "toyota", "car-", "vehicle"
+    "promo", "popup", "main-banner", "sub-banner", "top-", "bottom-",
+    "masthead", "header", "presskit", "media-kit", "share-image", "share_image",
+    "og-default", "default-og", "og_image_default", "social-card", "social_card",
+    "facebook", "twitter", "linkedin", "open-graph", "opengraph",
+    "ave", "avenue", "toyota", "car-", "vehicle"
+]
+
+# URL만으로 잡기 어려운 언론사/플랫폼 기본 공유 이미지 패턴
+PUBLISHER_DEFAULT_PATTERNS = [
+    "sedaily", "seoul.co.kr", "seouleconomicdaily", "seoul-economic",
+    "crn.com", "crn-", "securityweek", "security-week",
+    "pressrelease", "press-release", "newsroom-default", "site-default"
 ]
 
 
@@ -80,15 +92,58 @@ def extract_images_from_html(html_content, base_url):
 
 def is_valid_image_url(url):
     """이미지 URL이 기각 패턴에 속하는지 필터링합니다."""
-    url_lower = url.lower()
-    for kw in EXCLUDE_KEYWORDS:
+    url_lower = urllib.parse.unquote(url.lower())
+    for kw in EXCLUDE_KEYWORDS + PUBLISHER_DEFAULT_PATTERNS:
         if kw in url_lower:
             return False
     return True
 
 
+def looks_like_logo_or_text_image(img):
+    """단색 배경 위 로고/문자 중심 이미지인지 픽셀 특성으로 판별합니다."""
+    sample = img.convert("RGB").resize((180, 117))
+    stat = ImageStat.Stat(sample)
+    avg_stddev = sum(stat.stddev) / 3
+
+    quantized = sample.quantize(colors=64)
+    colors = quantized.getcolors(180 * 117) or []
+    if not colors:
+        return False
+
+    total = 180 * 117
+    color_count = len(colors)
+    top_ratio = max(count for count, _ in colors) / total
+
+    # 사진은 보통 색상 수와 분산이 높다. 로고/워드마크/텍스트 썸네일은 색상 수가 작고 배경색 지배율이 높다.
+    if color_count <= 16 and top_ratio >= 0.30:
+        return True
+    if color_count <= 32 and top_ratio >= 0.45 and avg_stddev < 42:
+        return True
+    if color_count <= 48 and top_ratio >= 0.58:
+        return True
+    if avg_stddev < 12:
+        return True
+
+    return False
+
+
+def inspect_image_file(path):
+    """다운로드된 이미지가 카드뉴스 실사 배경으로 적합한지 검증합니다."""
+    with Image.open(path) as img:
+        w, h = img.size
+        if w < 500:
+            return False, w, h, "width_under_500px"
+        if h <= 0 or w < h:
+            return False, w, h, "non_landscape_image"
+        if (w / h) > 2.6:
+            return False, w, h, "banner_like_ratio"
+        if looks_like_logo_or_text_image(img):
+            return False, w, h, "logo_or_text_like_image"
+        return True, w, h, "ok"
+
+
 def download_and_inspect_image(url, temp_path):
-    """이미지를 다운로드하여 해상도와 규격을 점검합니다."""
+    """이미지를 다운로드하여 해상도, 비율, 로고/텍스트성 여부를 점검합니다."""
     try:
         req = urllib.request.Request(url, headers=HEADERS)
         with urllib.request.urlopen(req, timeout=8) as response:
@@ -97,11 +152,10 @@ def download_and_inspect_image(url, temp_path):
         with open(temp_path, "wb") as f:
             f.write(content)
             
-        with Image.open(temp_path) as img:
-            w, h = img.size
-            # 규격 조건: 가로 500px 이상이며 가로가 더 긴(혹은 정방형인) 이미지
-            if w >= 500 and w >= h:
-                return True, w, h
+        ok, w, h, reason = inspect_image_file(temp_path)
+        if ok:
+            return True, w, h, reason
+        print(f"      ✗ 이미지 기각: {reason} ({w}x{h})")
     except Exception:
         pass
         
@@ -110,7 +164,7 @@ def download_and_inspect_image(url, temp_path):
             os.remove(temp_path)
         except Exception:
             pass
-    return False, 0, 0
+    return False, 0, 0, "download_or_inspection_failed"
 
 
 def crop_and_resize(src_path, dst_path, w=1080, h=702):
@@ -222,16 +276,17 @@ def main():
                         continue
                         
                     if not is_valid_image_url(img_url):
+                        print(f"      ✗ URL 패턴 기각: {img_url[:70]}")
                         continue
                         
                     if dry_run:
                         print(f"      [Dry-Run] 후보 매칭 검토: {img_url[:70]}")
-                        # 첫 번째 적격 후보를 만났다고 가정하고 넘김
+                        # 실제 다운로드 검증은 dry-run에서 생략
                         image_found = True
                         break
                         
                     # 실제 검증 및 다운로드
-                    ok, w, h = download_and_inspect_image(img_url, temp_img_path)
+                    ok, w, h, reason = download_and_inspect_image(img_url, temp_img_path)
                     if ok:
                         print(f"      ✓ 적격 이미지 획득 성공! ({w}x{h}) ➔ {img_url[:50]}...")
                         # 카드뉴스 규격으로 크롭 가공 후 보관
