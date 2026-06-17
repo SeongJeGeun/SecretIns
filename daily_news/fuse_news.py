@@ -48,46 +48,180 @@ PUBLISHER_DEFAULT_PATTERNS = [
     "media-default", "publisher-default", "article-default", "social-default"
 ]
 
+# 문맥상 무관한데 실사라서 통과하기 쉬운 기본 행사/기관 이미지 패턴
+IRRELEVANT_IMAGE_CONTEXT_PATTERNS = [
+    "bank of korea", "bok 2026", "bok2026", "bok-conference", "bok_conference",
+    "international conference", "conference-default"
+]
+
+GENERIC_TERMS = {
+    "the", "and", "for", "with", "from", "that", "this", "into", "over", "under",
+    "new", "news", "report", "reports", "official", "announced", "launches",
+    "reveals", "global", "daily", "media", "tech", "technology", "ai", "it",
+    "data", "market", "business", "company", "companies", "major", "north",
+    "american", "europe", "asia", "today", "source", "officially", "based"
+}
+
+SHORT_COMPANY_TERMS = {"lg", "ls", "pwc", "crn", "ai"}
+
+
+def extract_attr(tag, attr):
+    match = re.search(rf'{attr}\s*=\s*["\'](.*?)["\']', tag, re.IGNORECASE | re.DOTALL)
+    return match.group(1).strip() if match else ""
+
+
+def extract_meta(html_content, key):
+    patterns = [
+        rf'<meta\s+[^>]*(?:property|name)=["\']{re.escape(key)}["\'][^>]*content=["\'](.*?)["\']',
+        rf'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*(?:property|name)=["\']{re.escape(key)}["\']',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, html_content, re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(1).strip()
+    return ""
+
+
+def normalize_url(img_url, base_url):
+    if img_url.startswith("//"):
+        return "https:" + img_url
+    if img_url.startswith("/") and not img_url.startswith("//"):
+        return urllib.parse.urljoin(base_url, img_url)
+    if not img_url.startswith("http"):
+        return urllib.parse.urljoin(base_url, img_url)
+    return img_url
+
+
+def add_candidate(candidates, seen, img_url, is_og, context, base_url):
+    try:
+        final_url = normalize_url(img_url.strip(), base_url)
+    except Exception:
+        return
+
+    if not final_url or final_url in seen:
+        return
+
+    seen.add(final_url)
+    candidates.append({
+        "url": final_url,
+        "is_og": is_og,
+        "context": context.strip(),
+    })
+
 
 def extract_images_from_html(html_content, base_url):
-    """HTML 소스코드에서 og:image 및 일반 img 태그의 주소들을 추출합니다."""
-    images = []
-    
+    """HTML 소스코드에서 og:image 및 일반 img 태그의 주소와 후보별 문맥을 추출합니다."""
+    candidates = []
+    seen = set()
+
+    og_alt = " ".join([
+        extract_meta(html_content, "og:image:alt"),
+        extract_meta(html_content, "twitter:image:alt"),
+    ])
+
     # 1. og:image 우선 추출
-    og_matches = re.findall(r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']', html_content, re.IGNORECASE)
+    og_matches = re.findall(
+        r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']',
+        html_content,
+        re.IGNORECASE | re.DOTALL,
+    )
     if not og_matches:
-        og_matches = re.findall(r'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']', html_content, re.IGNORECASE)
-    
+        og_matches = re.findall(
+            r'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']',
+            html_content,
+            re.IGNORECASE | re.DOTALL,
+        )
+
     for img_url in og_matches:
-        img_url = img_url.strip()
-        if img_url:
-            images.append((img_url, True)) # (url, is_og)
+        add_candidate(candidates, seen, img_url, True, og_alt, base_url)
 
     # 2. 일반 img 태그 추출
-    img_tags = re.findall(r'<img\s+[^>]*src=["\'](.*?)["\']', html_content, re.IGNORECASE)
-    for img_url in img_tags:
-        img_url = img_url.strip()
-        if img_url and not img_url.startswith("data:"):
-            # 중복 회피
-            if not any(img_url == existing[0] for existing in images):
-                images.append((img_url, False))
-                
-    # 3. 상대 경로를 절대 경로로 보정
-    final_images = []
-    for img_url, is_og in images:
-        try:
-            if img_url.startswith("//"):
-                img_url = "https:" + img_url
-            elif img_url.startswith("/") and not img_url.startswith("//"):
-                img_url = urllib.parse.urljoin(base_url, img_url)
-            elif not img_url.startswith("http"):
-                img_url = urllib.parse.urljoin(base_url, img_url)
-            
-            final_images.append((img_url, is_og))
-        except Exception:
-            pass
-            
-    return final_images
+    img_tags = re.findall(r'<img\s+[^>]*>', html_content, re.IGNORECASE | re.DOTALL)
+    for tag in img_tags:
+        img_url = extract_attr(tag, "src")
+        if not img_url or img_url.startswith("data:"):
+            continue
+
+        context = " ".join([
+            extract_attr(tag, "alt"),
+            extract_attr(tag, "title"),
+            extract_attr(tag, "aria-label"),
+            extract_attr(tag, "data-caption"),
+            extract_attr(tag, "data-title"),
+        ])
+        add_candidate(candidates, seen, img_url, False, context, base_url)
+
+    return candidates
+
+
+def tokenize(text):
+    return re.findall(r"[a-z0-9][a-z0-9&.-]{1,}", text.lower())
+
+
+def build_card_keywords(card):
+    """카드별 이미지 문맥 검증에 사용할 핵심 키워드를 생성합니다."""
+    fields = [
+        card.get("company", ""),
+        card.get("theme", ""),
+        card.get("image_search", ""),
+        card.get("title", ""),
+    ]
+
+    threads = card.get("threads", {})
+    if isinstance(threads, dict):
+        fields.extend([
+            threads.get("hook", ""),
+            threads.get("detail", ""),
+        ])
+
+    raw_text = " ".join(str(v) for v in fields if v)
+    tokens = set()
+
+    company = str(card.get("company", "")).strip().lower()
+    if company:
+        tokens.add(company)
+        for part in tokenize(company):
+            if len(part) >= 2:
+                tokens.add(part)
+
+    image_search = str(card.get("image_search", "")).strip().lower()
+    if image_search:
+        tokens.add(image_search)
+
+    for token in tokenize(raw_text):
+        clean = token.strip(".-_")
+        if not clean:
+            continue
+        if clean in SHORT_COMPANY_TERMS:
+            tokens.add(clean)
+        elif len(clean) >= 4 and clean not in GENERIC_TERMS:
+            tokens.add(clean)
+
+    return sorted(tokens, key=len, reverse=True)
+
+
+def candidate_text(candidate):
+    parsed = urllib.parse.urlparse(candidate["url"])
+    path = urllib.parse.unquote(parsed.path.lower())
+    host = parsed.netloc.lower()
+    return " ".join([host, path, candidate.get("context", "").lower()])
+
+
+def has_irrelevant_context(text):
+    return any(pattern in text for pattern in IRRELEVANT_IMAGE_CONTEXT_PATTERNS)
+
+
+def candidate_matches_card(candidate, keywords):
+    """이미지 URL/alt/title 문맥이 카드 핵심어와 맞는지 확인합니다."""
+    text = candidate_text(candidate)
+    if has_irrelevant_context(text):
+        return False, "irrelevant_context_pattern"
+
+    for kw in keywords:
+        if kw and kw in text:
+            return True, "keyword_match"
+
+    return False, "no_card_keyword_match"
 
 
 def is_valid_image_url(url):
@@ -127,6 +261,15 @@ def looks_like_logo_or_text_image(img):
     return False
 
 
+def image_signature(path):
+    """동일/유사 이미지 반복 사용을 막기 위한 단순 perceptual hash."""
+    with Image.open(path) as img:
+        sample = img.convert("L").resize((8, 8), Image.Resampling.LANCZOS)
+        pixels = list(sample.getdata())
+        avg = sum(pixels) / len(pixels)
+        return "".join("1" if p >= avg else "0" for p in pixels)
+
+
 def inspect_image_file(path):
     """다운로드된 이미지가 카드뉴스 실사 배경으로 적합한지 검증합니다."""
     with Image.open(path) as img:
@@ -139,7 +282,7 @@ def inspect_image_file(path):
             return False, w, h, "banner_like_ratio"
         if looks_like_logo_or_text_image(img):
             return False, w, h, "logo_or_text_like_image"
-        return True, w, h, "ok"
+    return True, w, h, "ok"
 
 
 def download_and_inspect_image(url, temp_path):
@@ -148,23 +291,23 @@ def download_and_inspect_image(url, temp_path):
         req = urllib.request.Request(url, headers=HEADERS)
         with urllib.request.urlopen(req, timeout=8) as response:
             content = response.read()
-            
+
         with open(temp_path, "wb") as f:
             f.write(content)
-            
+
         ok, w, h, reason = inspect_image_file(temp_path)
         if ok:
-            return True, w, h, reason
+            return True, w, h, reason, image_signature(temp_path)
         print(f"      ✗ 이미지 기각: {reason} ({w}x{h})")
     except Exception:
         pass
-        
+
     if os.path.exists(temp_path):
         try:
             os.remove(temp_path)
         except Exception:
             pass
-    return False, 0, 0, "download_or_inspection_failed"
+    return False, 0, 0, "download_or_inspection_failed", None
 
 
 def crop_and_resize(src_path, dst_path, w=1080, h=702):
@@ -176,7 +319,7 @@ def crop_and_resize(src_path, dst_path, w=1080, h=702):
             ow, oh = img.size
             target_ratio = w / h
             current_ratio = ow / oh
-            
+
             if current_ratio > target_ratio:
                 # 가로가 더 긴 경우 좌우 자르기
                 nw = int(oh * target_ratio)
@@ -187,7 +330,7 @@ def crop_and_resize(src_path, dst_path, w=1080, h=702):
                 nh = int(ow / target_ratio)
                 top = (oh - nh) // 2
                 img = img.crop((0, top, ow, top + nh))
-                
+
             img = img.resize((w, h), Image.Resampling.LANCZOS)
             img.save(dst_path, "PNG")
         return True
@@ -209,104 +352,123 @@ def process_url(url):
 
 def main():
     dry_run = "--dry-run" in sys.argv
-    
+
     if not os.path.exists(DATA_PATH):
         print(f"✗ news_data.json이 존재하지 않습니다: {DATA_PATH}")
         sys.exit(1)
-        
+
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         news_data = json.load(f)
-        
+
     date = news_data.get("date")
     cards = news_data.get("cards", [])
-    
+
     print("\n" + "=" * 60)
     print(f"  다차원 미디어 융합 분석기 가동 — {date} (총 {len(cards)}개 뉴스)")
     print("=" * 60)
-    
+
     build_dir = os.path.join(SCRIPT_DIR, date)
     assets_dir = os.path.join(build_dir, "assets")
-    
+
     if not dry_run:
         os.makedirs(assets_dir, exist_ok=True)
-        
+
     temp_img_path = os.path.join(SCRIPT_DIR, "temp_fuse_img.tmp")
-    
+    used_signatures = set()
+
     for i, card in enumerate(cards):
         num = str(i + 2).zfill(2)
         theme = card["theme"]
         company = card["company"]
         title = card["title"]
-        
+        keywords = build_card_keywords(card)
+
         target_filename = f"card_{num}_{theme}.png"
         target_path = os.path.join(assets_dir, target_filename)
-        
+
         print(f"\n  [{num}] {company}: {title}")
-        
+
         # 교차 검증 URL 풀 생성 (related_urls가 없으면 기존 image_url이나 source 활용)
         urls = card.get("related_urls", [])
         if not urls and card.get("source_url"):
             urls = [card["source_url"]]
-            
+
         if not urls:
             print("    ⚠ 교차 기사 URL이 등록되어 있지 않습니다. 자동 검색이 필요합니다.")
             print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={company}, title={title}, query={card.get('image_search')}")
             continue
-            
+
         image_found = False
-        
+
         for url_idx, url in enumerate(urls):
             print(f"    🔎 [{url_idx+1}/{len(urls)}] 교차 기사 웹 분석 중: {url[:60]}...")
             html_content = process_url(url)
             if not html_content:
                 print("      ✗ 접속 실패")
                 continue
-                
+
             img_candidates = extract_images_from_html(html_content, url)
             print(f"      ✓ 이미지 후보 {len(img_candidates)}개 발견")
-            
+
             # og:image 우선으로 적격성 검증
             # 1회차 루프: og_image 검사 / 2회차 루프: 일반 img 검사
             for check_og in [True, False]:
                 if image_found:
                     break
-                    
-                for img_url, is_og in img_candidates:
-                    if is_og != check_og:
+
+                for candidate in img_candidates:
+                    if candidate["is_og"] != check_og:
                         continue
-                        
+
+                    img_url = candidate["url"]
+
                     if not is_valid_image_url(img_url):
                         print(f"      ✗ URL 패턴 기각: {img_url[:70]}")
                         continue
-                        
+
+                    matched, match_reason = candidate_matches_card(candidate, keywords)
+                    if not matched:
+                        print(f"      ✗ 문맥 불일치 기각: {match_reason} ➔ {img_url[:70]}")
+                        continue
+
                     if dry_run:
                         print(f"      [Dry-Run] 후보 매칭 검토: {img_url[:70]}")
                         # 실제 다운로드 검증은 dry-run에서 생략
                         image_found = True
                         break
-                        
+
                     # 실제 검증 및 다운로드
-                    ok, w, h, reason = download_and_inspect_image(img_url, temp_img_path)
+                    ok, w, h, reason, signature = download_and_inspect_image(img_url, temp_img_path)
                     if ok:
+                        if signature in used_signatures:
+                            print(f"      ✗ 중복 이미지 기각: 이미 다른 카드에서 사용한 이미지 ({w}x{h})")
+                            if os.path.exists(temp_img_path):
+                                os.remove(temp_img_path)
+                            continue
+
                         print(f"      ✓ 적격 이미지 획득 성공! ({w}x{h}) ➔ {img_url[:50]}...")
                         # 카드뉴스 규격으로 크롭 가공 후 보관
                         crop_ok = crop_and_resize(temp_img_path, target_path)
                         if crop_ok:
                             image_found = True
+                            used_signatures.add(signature)
                             if os.path.exists(temp_img_path):
                                 os.remove(temp_img_path)
                             break
-                
+
             if image_found:
                 break
-                
+
         if image_found:
             print(f"    ✓ [{num}] 미디어 융합 이미지 매칭 완료.")
         else:
             print(f"    ✗ 적격 이미지를 수집하지 못했습니다.")
+            if not dry_run and os.path.exists(target_path):
+                os.remove(target_path)
+                print(f"    ✓ 기존 부적격 가능 이미지 삭제: {target_filename}")
             # 플레이스홀더를 만들지 않고 트리거 로그만 던져서 AI 생성을 유도
             print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={company}, title={title}, query={card.get('image_search')}")
-            
+
     print("\n" + "=" * 60)
     print("  ✅ 미디어 융합 분석 완료!")
     print("=" * 60 + "\n")
