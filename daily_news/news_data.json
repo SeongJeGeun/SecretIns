@@ -1,244 +1,236 @@
 {
-  "date": "2026-06-16",
+  "date": "2026-06-17",
   "mode": "daily",
   "cards": [
     {
-      "company": "앤비디아",
-      "theme": "nvidia",
-      "status": "official",
-      "title": "엔비디아, 250억 달러 초대형 회사채 발행 성공",
-      "body": "인공지능(AI) 반도체 절대강자 엔비디아가 5년 만에 투자등급 회사채 시장에 복귀해 최대 250억 달러 규모의 회사채를 성공적으로 발행했습니다. AI 가속기 생산을 위한 설비 투자 자금 확보 및 기존 부채 리파이낸싱을 목적으로 추진된 이번 발행에는 사상 최대 수준인 850억 달러 규모의 매수 주문이 폭주하며 엔비디아를 향한 글로벌 투자자들의 견고한 신뢰를 재확인했습니다.",
-      "source": "Morningstar 보도 기준",
-      "image_search": "nvidia corporate building semiconductor finance",
-      "image_url": "",
-      "related_urls": [
-        "https://www.morningstar.com/news/dow-jones/20260615101/nvidia-aims-to-raise-up-to-25-billion-in-historic-bond-sale",
-        "https://www.investing.com/news/nvidia-corp-bond-sale-25-billion-june-2026"
-      ],
-      "colors": {
-        "bg": "#0a1c10",
-        "soft": "#1c4424",
-        "ink": "#e6f5eb"
-      },
-      "threads": {
-        "hook": "💰 엔비디아가 무려 250억 달러(약 34조원) 규모의 사상 최대 회사채를 발행했습니다. 주문액만 850억 달러가 몰리며 AI 황제의 저력을 입증했습니다.",
-        "detail": "5년 만의 대규모 회사채 발행은 차세대 AI 칩인 '블랙웰' 및 '루빈' 생산을 위한 실탄 확보와 기존 부채 리파이낸싱이 목적입니다. 압도적인 수요 덕에 당초 예상했던 200억 달러를 크게 웃도는 수준에서 조달 금리도 유리하게 확정되었습니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #엔비디아 #회사채 #AI인프라",
-        "question": "엔비디아의 공격적인 실탄 확보가 향후 AI 칩 독점 구조를 더 공고히 만들까요?",
-        "poll_options": [
-          "독점 구조 강화될 것",
-          "대체재 등장으로 약화",
-          "상황을 더 지켜봐야 함"
-        ]
-      }
-    },
-    {
-      "company": "앤스로픽",
-      "theme": "anthropic",
+      "theme": "business",
+      "company": "SpaceX",
       "status": "reported",
-      "title": "美 정부 최신 AI 모델 규제에 앤스로픽 전면 서비스 차단",
-      "body": "미국 정부가 국가 안보 위협을 이유로 앤스로픽의 차세대 초거대 AI 모델인 'Fable 5'와 'Mythos 5'에 대해 외국인의 접근을 즉각 차단하라는 수출 통제 행정 명령을 내렸습니다. 앤스로픽 측은 규제 준수를 위해 해당 모델들의 글로벌 서비스를 전격 중단하는 강수를 두었으며, 이는 미 정부가 반도체뿐만 아니라 대중 공개된 상용 AI 소프트웨어에 직접적 규제를 가한 첫 사례로 기록되어 업계에 큰 충격을 주고 있습니다.",
-      "source": "The Guardian 보도 기준",
-      "image_search": "anthropic claude ai software server technology restriction",
-      "image_url": "",
+      "title": "SpaceX Overtakes Amazon as World's 5th Most Valuable Firm",
+      "body": "Elon Musk's SpaceX has surpassed Amazon to become the world's fifth most valuable company, driven by its $60 billion AI compute campus push and a soaring private valuation. The company is now unleashing its war chest to solve critical AI infrastructure bottlenecks.",
+      "source": "BBC, WSJ",
+      "image_search": "spacex starship rocket launch pad night fire",
       "related_urls": [
-        "https://www.theguardian.com/technology/2026/jun/12/us-government-orders-anthropic-to-ban-foreign-nationals-from-using-fable-5-mythos-5",
-        "https://www.semafor.com/article/2026/06/12/us-government-orders-anthropic-to-ban-foreign-nationals-from-using-mythos-5-fable-5"
+        "https://www.bbc.com/news/business",
+        "https://techcrunch.com"
       ],
       "colors": {
-        "bg": "#241e17",
-        "soft": "#3d3125",
-        "ink": "#fbf6f0"
+        "bg": "#f0f4ff",
+        "soft": "#d6e4ff",
+        "ink": "#1a3a6b"
       },
       "threads": {
-        "hook": "🚨 AI 안보 규제가 소프트웨어 단까지 침투했습니다. 미국 정부의 차세대 Claude 모델 수출 통제로 앤스로픽이 신규 서비스를 중단했습니다.",
-        "detail": "정부는 최신 AI 모델의 탈옥(jailbreak) 리스크와 안보 유출 우려를 명분으로 내세웠으나, 업계와 앤스로픽 측은 과도한 규제가 글로벌 사이버 방어 도구의 사용을 막고 시장 혼란을 초래한다며 거세게 반발하고 나섰습니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #앤스로픽 #수출규제 #AI안보",
-        "question": "소프트웨어 AI 모델에 대한 정부의 직접적인 수출 규제 조치는 정당할까요?",
+        "hook": "📢 [Fact Check] SpaceX가 아마존을 제치고 세계 5위 기업으로 등극, AI 인프라에 $60B 투자 선언.",
+        "detail": "SpaceX의 기업가치가 폭등하며 아마존을 추월했습니다. 핵심은 AI 컴퓨팅 캠퍼스 건설에 600억 달러를 쏟아붓겠다는 전략입니다.",
+        "context": "#앤스로픽 #앤비디아 #SpaceX #일론머스크 #AI인프라",
+        "question": "SpaceX의 AI 인프라 투자, 성공할까요?",
         "poll_options": [
-          "국가 안보상 불가피함",
-          "과도한 시장 발전 저해",
-          "국산 AI 자립이 해결책"
+          "게임체인저가 될 것",
+          "과대평가 우려",
+          "장기적으로 지켜봐야"
         ]
       }
     },
     {
-      "company": "스페이스X",
-      "theme": "spacex",
-      "status": "official",
-      "title": "스페이스X 역사적 상장 데뷔… '100만 AI 위성' 구상 공개",
-      "body": "스페이스X(SPCX)가 나스닥에 주당 135달러로 역사적인 기업공개(IPO)를 완료하며 첫 거래일 만에 기업가치 2.5조 달러를 돌파하는 기염을 토했습니다. 일론 머스크는 자사 AI 벤처인 xAI와의 합병을 강조하며, 지상 데이터센터의 고질적인 전력 공급 부족과 부지 문제를 극복하기 위해 우주 궤도에 100만 개의 인공지능 위성을 배치하여 '우주 데이터센터'를 구축하겠다는 원대한 구상을 공식적으로 밝혔습니다.",
-      "source": "Enterprise Times 보도 기준",
-      "image_search": "spacex falcon rocket launch space satellite earth",
-      "image_url": "",
-      "related_urls": [
-        "https://www.enterprisetimes.co.uk/2026/06/12/spacex-historic-ipo-shares-soar/",
-        "https://www.thestar.com.my/tech/tech-news/2026/06/15/spacex-spacex-ipo-historic-market-valuation"
-      ],
-      "colors": {
-        "bg": "#0d1726",
-        "soft": "#1b2a47",
-        "ink": "#f0f4f8"
-      },
-      "threads": {
-        "hook": "🚀 금융과 우주 역사의 신기원! 스페이스X가 나스닥에 상장하여 시총 2.5조 달러를 넘어서며, 세계 최초 '100만 AI 위성' 구상을 발표했습니다.",
-        "detail": "일론 머스크는 xAI의 초거대 AI 연산력을 지상이 아닌 우주로 보냅니다. 태양광 패널과 우주의 차가운 냉각 환경을 활용해 지구의 전력망 부하 없이 무제한으로 구동하는 궤도형 AI 센터 시대를 열겠다는 전략입니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #스페이스X #일론머스크 #xAI",
-        "question": "우주 공간에 100만 개의 AI 위성을 띄우는 머스크의 구상이 실현 가능할까요?",
-        "poll_options": [
-          "획기적인 인프라 혁신",
-          "우주 쓰레기 등 현실 불가",
-          "장기적인 가능성 높음"
-        ]
-      }
-    },
-    {
-      "company": "구글",
-      "theme": "google",
-      "status": "official",
-      "title": "구글, 목소리 톤 그대로 살린 '제미나이 3.5 라이브 번역' 공개",
-      "body": "구글이 다국어 음성 대화를 실시간으로 통역하는 오디오-투-오디오 기반 '제미나이 3.5 라이브 번역' 모델을 출시했습니다. 텍스트 변환 단계를 생략하고 스트리밍 오디오를 직접 학습·번역함으로써, 화자의 미세한 억양, 호흡, 감정 상태를 그대로 유지한 채 70개 이상의 언어를 양방향으로 번역하며 모바일 번역 앱 및 워크스페이스 Meet 화상 회의에 탑재될 예정입니다.",
-      "source": "Google 공식 발표 기준",
-      "image_search": "google gemini live translation smartphone technology",
-      "image_url": "",
-      "related_urls": [
-        "https://blog.google/technology/ai/google-gemini-3-5-live-translate-release/",
-        "https://www.cnet.com/tech/services/google-gemini-3-5-live-translate-features/"
-      ],
-      "colors": {
-        "bg": "#0f172a",
-        "soft": "#1e293b",
-        "ink": "#f8fafc"
-      },
-      "threads": {
-        "hook": "🗣️ 로봇 같은 번역 음성은 이제 안녕! 구글이 말하는 사람의 목소리 톤과 감정을 유지하며 실시간 번역을 제공하는 Gemini 3.5 라이브 번역을 론칭했습니다.",
-        "detail": "70개 이상의 언어를 감지하며, 폰을 귀에 대면 일반 통화처럼 실시간 음성 통역을 들려주는 '리스닝 모드'가 도입되었습니다. 텍스트 변환 없는 네이티브 오디오 번역으로 딜레이가 획기적으로 줄어들었습니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #구글제미나이 #GeminiLive #실시간번역",
-        "question": "구글의 실시간 감정-음성 번역 기술이 글로벌 협업의 패러다임을 바꿀까요?",
-        "poll_options": [
-          "획기적인 비즈니스 변화",
-          "기존 번역으로도 충분",
-          "실제 음성 품질 확인 필요"
-        ]
-      }
-    },
-    {
-      "company": "마이크로소프트",
-      "theme": "microsoft",
-      "status": "official",
-      "title": "MS, 역대 최대 규모 206개 취약점 패치… 제로데이 해결",
-      "body": "마이크로소프트가 6월 보안 정기 업데이트를 통해 윈도우 및 관련 시스템에서 식별된 역대 최대 규모인 206개의 취약점 보안 패치를 배포했습니다. 이 중에는 보안 연구원 'Nightmare Eclipse'가 깃허브 등에 무단 폭로한 치명적인 로컬 권한 상승(CVE-2026-45586 등) 및 원격 코드 실행 취약점이 다수 포함되어 있으며, MS 측은 시스템 오작동 방지와 보안 위협 선제 차단을 위해 사용자들의 조속한 패치 업데이트를 적극 당부했습니다.",
-      "source": "The Record 보도 기준",
-      "image_search": "microsoft windows security binary hacking code update",
-      "image_url": "",
-      "related_urls": [
-        "https://therecord.media/microsoft-patch-tuesday-june-2026-record-206-cves",
-        "https://www.computerworld.com/article/2026/06/11/microsoft-june-2026-patch-tuesday-analysis"
-      ],
-      "colors": {
-        "bg": "#18181b",
-        "soft": "#27272a",
-        "ink": "#fafafa"
-      },
-      "threads": {
-        "hook": "🔒 역대 최고 기록인 206개 보안 결함이 패치되었습니다. 최근 보안 업계 핫이슈였던 해커그룹 'Nightmare Eclipse'의 제로데이 폭로에 대응한 조치입니다.",
-        "detail": "이번 패치에는 33개의 크리티컬 취약점이 포함되어 있으며, 특히 네트워크 전송에 핵심적인 http.sys 원격 제어 취약점과 윈도우 디펜더 우회 제로데이가 집중 타겟이었습니다. 윈도우 서버 및 개인 기기 패치가 급선무입니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #마이크로소프트 #보안패치 #제로데이",
-        "question": "최근 빈번해진 OS 보안 이슈 속에서, 여러분은 정기 패치를 즉각 적용하고 계시나요?",
-        "poll_options": [
-          "자동 업데이트로 항상 즉각 적용",
-          "오류 우려로 며칠 지켜봄",
-          "보안 이슈 발생 시 수동 적용"
-        ]
-      }
-    },
-    {
-      "company": "PwC",
-      "theme": "career",
+      "theme": "business",
+      "company": "OpenAI",
       "status": "reported",
-      "title": "PwC 'AI 일자리 바롬터' 발표… AI 숙련 임금 62% 프리미엄",
-      "body": "글로벌 컨설팅사 PwC가 전 세계 10억 개 이상의 채용 정보를 분석한 '2026년 글로벌 AI 일자리 바롬터'에 따르면, AI 역량을 보유한 인재의 글로벌 평균 임금 프리미엄이 62%에 도달했습니다. 또한 AI 활용을 빠르게 확립한 고도화 기업들은 일반 피어 대비 무려 163%의 노동 생산성 향상과 높은 순고용 증가율을 보이며, 미래 노동 시장이 AI 숙련 여부에 따라 '양극화 트랙'으로 재편되고 있음을 규명했습니다.",
-      "source": "PwC 공식 보고서 기준",
-      "image_search": "office employee career success analysis data chart",
-      "image_url": "",
+      "title": "Leaked OpenAI Financials: $38.5B Loss and Massive Compute Burn",
+      "body": "Leaked financial documents reveal OpenAI is burning through capital at an unprecedented rate, with cumulative losses reaching $38.5 billion. The company's enormous compute expenditure underscores the staggering cost of training frontier AI models at scale.",
+      "source": "Hacker News, RuntimeWire",
+      "image_search": "server room data center cooling systems blue lights",
       "related_urls": [
-        "https://www.pwc.com/gx/en/issues/artificial-intelligence/global-ai-jobs-barometer-2026.html",
-        "https://www.businessinsider.com/pwc-ai-jobs-report-skills-wages-headcount-2026-6"
+        "https://runtimewire.com",
+        "https://arstechnica.com"
       ],
       "colors": {
-        "bg": "#172554",
-        "soft": "#1e3a8a",
-        "ink": "#eff6ff"
+        "bg": "#fff5f5",
+        "soft": "#ffe0e0",
+        "ink": "#8b1a1a"
       },
       "threads": {
-        "hook": "💼 AI 기술을 장착한 직장인의 가치가 폭등하고 있습니다. PwC 조사 결과 AI 숙련 인재의 급여 프리미엄이 사상 최고인 62%를 기록했습니다.",
-        "detail": "단순히 일자리가 줄어든다는 두려움과 달리, AI를 도입한 선두 기업들은 고용을 더 많이 늘리고 높은 생산성으로 격차를 벌리고 있습니다. 반면 주니어 신입직에서 조기 시니어급 업무 역량을 요구받는 고충도 확인되었습니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #AI일자리 #PwC보고서 #커리어성장",
-        "question": "AI가 보편화된 미래 일자리 환경에서 개인이 가장 우선 확보해야 할 역량은 무엇일까요?",
+        "hook": "📢 [Exclusive] OpenAI 내부 재무제표 유출 — 누적 손실 385억 달러, 컴퓨트 비용 폭증.",
+        "detail": "유출된 재무제표에 따르면 OpenAI의 누적 손실이 385억 달러에 달하며, 프론티어 모델 훈련 비용이 천문학적으로 증가하고 있습니다.",
+        "context": "#앤스로픽 #앤비디아 #OpenAI #GPT #AI비용",
+        "question": "OpenAI의 적자, 지속 가능할까요?",
         "poll_options": [
-          "AI 프롬프트/코딩 기술",
-          "협업 및 정서적 지능(EQ)",
-          "데이터 기반 비즈니스 기획"
+          "결국 흑자 전환할 것",
+          "구조적 문제 심각",
+          "투자자가 계속 버텨줄 것"
         ]
       }
     },
     {
-      "company": "비바테크",
-      "theme": "vivatech",
-      "status": "reported",
-      "title": "유럽 최대 테크 행사 '비바테크 2026' 개막… AI 에너지 전쟁",
-      "body": "유럽 최대 스타트업 및 IT 전시회인 '비바테크(VivaTech) 2026'이 10주년을 맞이하여 파리에서 성대하게 개막했습니다. 올해는 '인공지능(AI)과 녹색 에너지(GreenTech)의 융합'을 핵심 아젠다로 내걸고 글로벌 빅테크 및 정부 사절단이 참여했으며, AI 데이터센터 고전력 인프라 수요를 충당하기 위한 탄소중립 전력망 대안과 친환경 기술 주권 수호 및 소버린 AI 인프라 구축 방안이 심도 있게 토론됩니다.",
-      "source": "TechNode Global 보도 기준",
-      "image_search": "vivatech paris exhibition hall tech startup booth",
-      "image_url": "",
-      "related_urls": [
-        "https://vivatech.com/news/vivatech-2026-anniversary-edition-focus-on-ai-energy",
-        "https://technode.global/2026/06/15/vivatech-2026-paris-expo-preview/"
-      ],
-      "colors": {
-        "bg": "#2e1065",
-        "soft": "#3b0764",
-        "ink": "#faf5ff"
-      },
-      "threads": {
-        "hook": "🇫🇷 파리에서 열린 유럽 최대 IT 행사 'VivaTech 2026'의 중심 주제는 역시 AI였습니다. 특히 기후 위기와 AI 인프라 전력 부족에 대한 해법에 관심이 쏠렸습니다.",
-        "detail": "MS, 구글 등 글로벌 리더들과 유럽의 스타트업들이 결집하여 생성형 AI 인프라 고도화와 소버린(Sovereign) 자국 주권 AI 생태계, 그리고 에너지 효율적인 하드웨어 설계에 대한 신기술을 쏟아내고 있습니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #비바테크 #VivaTech #AI에너지",
-        "question": "AI 급성장에 따른 기하급수적 전력 폭증 문제를 해결할 수 있는 가장 적절한 대안은?",
-        "poll_options": [
-          "원자력 발전 확대",
-          "신재생에너지 및 ESS 확대",
-          "AI 전력 소모 알고리즘 혁신"
-        ]
-      }
-    },
-    {
-      "company": "오픈AI",
-      "theme": "openai",
+      "theme": "semiconductor",
+      "company": "Nvidia",
       "status": "official",
-      "title": "오픈AI, 1.5억 달러 투자 '글로벌 파트너 네트워크' 가동",
-      "body": "오픈AI가 기업용 AI 도입 병목 현상을 타개하고 대규모 엔터프라이즈 전환을 가속화하기 위해 1억 5,000만 달러 규모의 첫 공식 글로벌 파트너 프로그램 '오픈AI 파트너 네트워크'를 론칭했습니다. 오픈AI는 현재의 진입 장벽이 기술 성능 한계가 아닌 기업 내 구현과 커스터마이징 문제라고 보고, 올해 말까지 파트너사들과 긴밀히 협력해 전 세계적으로 총 30만 명의 인증된 전문 AI 비즈니스 컨설턴트를 육성할 방침입니다.",
-      "source": "Business Insider 보도 기준",
-      "image_search": "openai partner network conference meeting room business",
-      "image_url": "",
+      "title": "Nvidia's Jensen Huang: Society Needs 'New Social Norms' for AI Era",
+      "body": "Nvidia CEO Jensen Huang declared that society must develop entirely new social norms to cope with the rapid proliferation of artificial intelligence. In an exclusive AP interview, he emphasized that AI's transformative impact will require rethinking education, workforce, and governance frameworks.",
+      "source": "AP News, CNBC",
+      "image_search": "nvidia jensen huang keynote speech stage presentation",
       "related_urls": [
-        "https://openai.com/blog/openai-partner-network-launch-2026/",
-        "https://www.businessinsider.com/openai-global-partner-program-launch-consultants-2026-6"
+        "https://apnews.com",
+        "https://www.cnbc.com"
       ],
       "colors": {
-        "bg": "#1c1917",
-        "soft": "#292524",
-        "ink": "#f5f5f4"
+        "bg": "#e8ffe8",
+        "soft": "#c8f0c8",
+        "ink": "#1a5c1a"
       },
       "threads": {
-        "hook": "🤝 OpenAI가 단순히 모델 판매를 넘어 직접 글로벌 파트너십 허브를 구축합니다. 1억 5천만 달러를 투자해 30만 명의 기업 AI 컨설턴트를 키우겠다고 선언했습니다.",
-        "detail": "기술이 있어도 이를 실제 비즈니스에 녹여내지 못하는 대기업들의 병목을 없애기 위함입니다. 컨설팅 펌, 시스템 통합(SI) 기업들과 손을 잡고 모델 최적화와 솔루션 보급에 박차를 가합니다.",
-        "context": "#앤스로픽각국정부 #삼성전자SK하이닉스 #오픈AI #비즈니스모델 #AI컨설팅",
-        "question": "오픈AI의 30만 AI 전문가 양성 계획이 기업들의 생성형 AI 도입 속도를 획기적으로 올릴까요?",
+        "hook": "📢 [Fact Check] 📢 [AP 단독] 젠슨 황 \"AI 시대를 위한 완전히 새로운 사회적 규범이 필요하다.\"",
+        "detail": "엔비디아 CEO가 AI의 변혁적 영향에 대응하기 위해 교육, 노동, 거버넌스 전반의 재설계가 필요하다고 강조했습니다.",
+        "context": "#앤스로픽 #앤비디아 #Nvidia #젠슨황 #AI사회",
+        "question": "AI 시대의 새로운 사회규범, 무엇이 가장 시급할까요?",
         "poll_options": [
-          "도입 속도 획기적 증가",
-          "기존 SI 업체의 한계 예상",
-          "일부 대기업 중심 편중"
+          "교육 체계 재편",
+          "노동/고용 규제",
+          "AI 윤리 거버넌스"
+        ]
+      }
+    },
+    {
+      "theme": "business",
+      "company": "Anthropic",
+      "status": "reported",
+      "title": "Anthropic's Fable Shutdown Ignites Open-Source AI Movement",
+      "body": "Anthropic's abrupt shutdown of its Fable AI research division has sent shockwaves through the AI community, intensifying calls for open-source AI development. The move, following a White House security directive, raises fundamental questions about centralized control of frontier AI systems.",
+      "source": "CNBC, PBS",
+      "image_search": "open source code programming community collaboration",
+      "related_urls": [
+        "https://www.cnbc.com",
+        "https://www.pbs.org"
+      ],
+      "colors": {
+        "bg": "#fff8e1",
+        "soft": "#ffecb3",
+        "ink": "#6d4c00"
+      },
+      "threads": {
+        "hook": "📢 [Fact Check] 📢 [Breaking] 앤스로픽 Fable 연구소 돌연 폐쇄 → 오픈소스 AI 운동 폭발적 확산.",
+        "detail": "백악관 보안 지침에 따른 앤스로픽의 연구소 폐쇄가 프론티어 AI의 중앙집중적 통제에 대한 근본적 의문을 촉발하고 있습니다.",
+        "context": "#앤비디아 #앤스로픽 #Anthropic #오픈소스 #AI보안",
+        "question": "프론티어 AI, 오픈소스로 가야 할까요?",
+        "poll_options": [
+          "완전 오픈소스 지지",
+          "안전을 위해 통제 필요",
+          "하이브리드 모델이 답"
+        ]
+      }
+    },
+    {
+      "theme": "semiconductor",
+      "company": "Samsung",
+      "status": "official",
+      "title": "Samsung Launches Full-Scale AI Transformation Across DX Division",
+      "body": "Samsung Electronics has officially kicked off a comprehensive AI transformation of its Device eXperience division, aiming to overcome the growing gap between its dominant DS semiconductor unit and a struggling consumer electronics business. The strategy focuses on embedding AI at every level of product development.",
+      "source": "전자신문, v.daum.net",
+      "image_search": "samsung electronics headquarters building korea modern",
+      "related_urls": [
+        "https://www.etnews.com",
+        "https://www.reuters.com"
+      ],
+      "colors": {
+        "bg": "#e3f2fd",
+        "soft": "#bbdefb",
+        "ink": "#0d47a1"
+      },
+      "threads": {
+        "hook": "📢 [Fact Check] 📢 [공식] 삼성전자 DX부문, 전사적 'AI 대전환' 가속 — DS 독주 속 체질 개선 본격화.",
+        "detail": "반도체(DS) 사업부의 호황 속에서 소비자가전(DX) 부문의 침체를 AI 전환으로 돌파하겠다는 전략입니다.",
+        "context": "#앤스로픽 #앤비디아 #삼성전자 #Samsung #AI전환",
+        "question": "삼성 DX의 AI 전환, 성공할 수 있을까요?",
+        "poll_options": [
+          "삼성의 저력 믿는다",
+          "구조적 한계 있다",
+          "시간이 더 필요하다"
+        ]
+      }
+    },
+    {
+      "theme": "government",
+      "company": "G7 Summit",
+      "status": "official",
+      "title": "G7 Leaders Debate 'Trusted Partners' Access to US AI Models",
+      "body": "G7 leaders are in intense discussions over a framework to grant 'trusted partner' nations privileged access to cutting-edge US AI models. The talks reflect growing AI protectionism concerns as Europe pushes back against US dominance in frontier AI development and deployment.",
+      "source": "Reuters, CNBC",
+      "image_search": "G7 summit leaders meeting table flags diplomacy",
+      "related_urls": [
+        "https://www.reuters.com",
+        "https://www.cnbc.com"
+      ],
+      "colors": {
+        "bg": "#fce4ec",
+        "soft": "#f8bbd0",
+        "ink": "#6a1b2a"
+      },
+      "threads": {
+        "hook": "📢 [G7] 미국 AI 모델 접근권을 둘러싼 '신뢰 파트너' 프레임워크 논의 — AI 보호주의 격화.",
+        "detail": "유럽이 미국의 프론티어 AI 지배에 반발하며 G7에서 AI 접근 동맹 체제를 놓고 치열한 논쟁이 벌어지고 있습니다.",
+        "context": "#앤스로픽 #앤비디아 #G7 #AI외교 #AI보호주의",
+        "question": "AI 모델 접근, 동맹국에만 허용해야 할까요?",
+        "poll_options": [
+          "안보 위해 제한 필요",
+          "개방적 접근이 혁신 촉진",
+          "다자간 거버넌스가 답"
+        ]
+      }
+    },
+    {
+      "theme": "technology",
+      "company": "Foxconn",
+      "status": "official",
+      "title": "Foxconn Accelerates Global AI Factory Leadership Push",
+      "body": "Hon Hai Technology Group (Foxconn) is dramatically accelerating its global push to become the dominant player in AI server factory infrastructure. The company is scaling its AI manufacturing capabilities across multiple continents to meet the explosive demand for AI compute hardware.",
+      "source": "Forbes, CRN",
+      "image_search": "foxconn factory production line automation robotics",
+      "related_urls": [
+        "https://www.crn.com",
+        "https://www.tomshardware.com"
+      ],
+      "colors": {
+        "bg": "#f3e5f5",
+        "soft": "#e1bee7",
+        "ink": "#4a148c"
+      },
+      "threads": {
+        "hook": "📢 [Fact Check] 📢 [Official] 폭스콘, AI 서버 공장 글로벌 확장 전략 본격 가동 — 대륙별 제조 거점 확대.",
+        "detail": "AI 컴퓨트 하드웨어의 폭발적 수요에 대응하여 폭스콘이 다대륙 AI 제조 인프라를 급속 확장하고 있습니다.",
+        "context": "#앤스로픽 #앤비디아 #폭스콘 #Foxconn #AI서버",
+        "question": "AI 서버 제조의 패권, 누가 쥘까요?",
+        "poll_options": [
+          "폭스콘 독주",
+          "퀀타/위스트론 추격",
+          "미국 리쇼어링 대세"
+        ]
+      }
+    },
+    {
+      "theme": "government",
+      "company": "Korea AI Policy",
+      "status": "official",
+      "title": "Korea Appoints AWS Executive as AI Chief, Targets 'AI G3' Status",
+      "body": "The Korean government has appointed former AWS executive Lee Ki-hyuk as the new Presidential AI Secretary, signaling an aggressive push to achieve 'AI G3' status globally. The appointment is part of a broader strategy to restructure the nation's AI execution leadership.",
+      "source": "지디넷코리아, 중앙일보",
+      "image_search": "korean government blue house digital innovation policy",
+      "related_urls": [
+        "https://zdnet.co.kr",
+        "https://www.joongang.co.kr"
+      ],
+      "colors": {
+        "bg": "#e0f7fa",
+        "soft": "#b2ebf2",
+        "ink": "#004d40"
+      },
+      "threads": {
+        "hook": "📢 [단독] AWS 이기혁 → 대통령실 AI 수석 내정. 한국 'AI G3' 실행 라인 전면 재편.",
+        "detail": "한국 정부가 AWS 출신 인사를 AI 수석비서관에 내정하며 글로벌 AI 3강 도약을 위한 실행 리더십을 대폭 강화합니다.",
+        "context": "#앤스로픽 #앤비디아 #AI수석 #AWS #한국AI",
+        "question": "한국의 'AI G3' 목표, 현실적인가요?",
+        "poll_options": [
+          "충분히 가능하다",
+          "인프라 격차가 크다",
+          "정책보다 민간이 중요"
         ]
       }
     }

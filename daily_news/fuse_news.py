@@ -16,6 +16,7 @@ import re
 import sys
 import json
 import time
+import subprocess
 import urllib.request
 import urllib.parse
 from PIL import Image, ImageStat
@@ -71,14 +72,14 @@ def extract_attr(tag, attr):
 
 
 def extract_meta(html_content, key):
-    patterns = [
-        rf'<meta\s+[^>]*(?:property|name)=["\']{re.escape(key)}["\'][^>]*content=["\'](.*?)["\']',
-        rf'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*(?:property|name)=["\']{re.escape(key)}["\']',
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, html_content, re.IGNORECASE | re.DOTALL)
-        if match:
-            return match.group(1).strip()
+    # Find all meta tags first to avoid catastrophic backtracking on large HTML pages
+    meta_tags = re.findall(r'<meta\s+[^>]+>', html_content, re.IGNORECASE)
+    for tag in meta_tags:
+        if re.search(rf'(?:property|name)\s*=\s*["\']{re.escape(key)}["\']', tag, re.IGNORECASE):
+            content_match = re.search(r'content\s*=\s*["\'](.*?)["\']', tag, re.IGNORECASE)
+            if content_match:
+                import html as html_lib
+                return html_lib.unescape(content_match.group(1).strip())
     return ""
 
 
@@ -120,17 +121,14 @@ def extract_images_from_html(html_content, base_url):
     ])
 
     # 1. og:image 우선 추출
-    og_matches = re.findall(
-        r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']',
-        html_content,
-        re.IGNORECASE | re.DOTALL,
-    )
-    if not og_matches:
-        og_matches = re.findall(
-            r'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']',
-            html_content,
-            re.IGNORECASE | re.DOTALL,
-        )
+    meta_tags = re.findall(r'<meta\s+[^>]+>', html_content, re.IGNORECASE)
+    og_matches = []
+    for tag in meta_tags:
+        if re.search(r'(?:property|name)\s*=\s*["\'](?:og:image|twitter:image)["\']', tag, re.IGNORECASE):
+            content_match = re.search(r'content\s*=\s*["\'](.*?)["\']', tag, re.IGNORECASE)
+            if content_match:
+                import html as html_lib
+                og_matches.append(html_lib.unescape(content_match.group(1).strip()))
 
     for img_url in og_matches:
         add_candidate(candidates, seen, img_url, True, og_alt, base_url)
@@ -288,12 +286,12 @@ def inspect_image_file(path):
 def download_and_inspect_image(url, temp_path):
     """이미지를 다운로드하여 해상도, 비율, 로고/텍스트성 여부를 점검합니다."""
     try:
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=8) as response:
-            content = response.read()
-
-        with open(temp_path, "wb") as f:
-            f.write(content)
+        result = subprocess.run(
+            ["curl", "-sL", "-A", HEADERS["User-Agent"], "--max-time", "5", "-o", temp_path, url],
+            capture_output=True, timeout=8
+        )
+        if result.returncode != 0:
+            raise Exception("curl failed")
 
         ok, w, h, reason = inspect_image_file(temp_path)
         if ok:
@@ -342,12 +340,15 @@ def crop_and_resize(src_path, dst_path, w=1080, h=702):
 def process_url(url):
     """URL에 방문해 HTML을 가져옵니다."""
     try:
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=10) as response:
-            html_content = response.read().decode("utf-8", errors="ignore")
-        return html_content
+        result = subprocess.run(
+            ["curl", "-sL", "-A", HEADERS["User-Agent"], "--max-time", "5", url],
+            capture_output=True, text=True, timeout=8
+        )
+        if result.returncode == 0:
+            return result.stdout
     except Exception:
-        return ""
+        pass
+    return ""
 
 
 def main():

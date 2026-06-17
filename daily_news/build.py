@@ -147,7 +147,7 @@ def generate_css(data, output_dir):
         t = card["theme"]
         c = card["colors"]
         img = f"card_{num}_{t}.png"
-        themes += f""".theme-{t} {{
+        themes += f"""#card-{num} {{
   --theme-bg: {c["bg"]};
   --theme-soft: {c["soft"]};
   --theme-ink: {c["ink"]};
