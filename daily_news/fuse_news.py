@@ -65,6 +65,31 @@ GENERIC_TERMS = {
 
 SHORT_COMPANY_TERMS = {"lg", "ls", "pwc", "crn", "ai"}
 
+# -----------------------------------------------------------------------
+# active_memory.md IMAGE_POLICY_V3 대주제 직관 매핑 키워드 사전
+# 카테고리 테마명 → 해당 테마를 시각적으로 대표하는 실사 키워드 목록
+# -----------------------------------------------------------------------
+CATEGORY_KEYWORD_MAP = {
+    "semiconductor": ["wafer", "silicon", "chip", "fab", "foundry", "lithography", "tsmc", "nvidia", "intel"],
+    "chip":          ["wafer", "silicon", "chip", "fab", "foundry"],
+    "ai":            ["robot", "datacenter", "server", "gpu", "neural", "llm", "openai", "gemini", "claude"],
+    "rate":          ["federal", "reserve", "central", "bank", "interest", "fomc", "boj", "ecb"],
+    "stock":         ["exchange", "nasdaq", "nyse", "trading", "market", "wall", "street", "ticker"],
+    "realestate":    ["apartment", "building", "city", "skyline", "construction", "housing"],
+    "export":        ["port", "container", "cargo", "ship", "harbor", "crane", "terminal"],
+    "energy":        ["solar", "wind", "turbine", "pipeline", "oil", "gas", "power", "grid"],
+    "policy":        ["government", "capitol", "parliament", "briefing", "white", "house", "ministry"],
+    "election":      ["ballot", "voting", "poll", "campaign", "congress"],
+    "court":         ["courthouse", "judge", "law", "justice", "legal", "verdict"],
+    "crypto":        ["bitcoin", "ethereum", "blockchain", "coin", "crypto", "btc", "eth"],
+    "space":         ["rocket", "satellite", "nasa", "spacex", "launch", "orbit", "astronaut"],
+    "ev":            ["electric", "vehicle", "battery", "tesla", "charging", "lithium"],
+    "cloud":         ["datacenter", "server", "cloud", "aws", "azure", "gcp", "rack"],
+    "robot":         ["robot", "automation", "humanoid", "arm", "factory", "assembly"],
+    "health":        ["hospital", "clinic", "medical", "pharma", "drug", "vaccine", "dna"],
+    "finance":       ["bank", "finance", "trading", "wall", "street", "fund", "exchange"],
+}
+
 
 def extract_attr(tag, attr):
     match = re.search(rf'{attr}\s*=\s*["\'](.*?)["\']', tag, re.IGNORECASE | re.DOTALL)
@@ -72,7 +97,6 @@ def extract_attr(tag, attr):
 
 
 def extract_meta(html_content, key):
-    # Find all meta tags first to avoid catastrophic backtracking on large HTML pages
     meta_tags = re.findall(r'<meta\s+[^>]+>', html_content, re.IGNORECASE)
     for tag in meta_tags:
         if re.search(rf'(?:property|name)\s*=\s*["\']{re.escape(key)}["\']', tag, re.IGNORECASE):
@@ -157,7 +181,9 @@ def tokenize(text):
 
 
 def build_card_keywords(card):
-    """카드별 이미지 문맥 검증에 사용할 핵심 키워드를 생성합니다."""
+    """카드별 이미지 문맥 검증에 사용할 핵심 키워드를 생성합니다.
+    active_memory.md CATEGORY_KEYWORD_MAP을 반영하여 테마별 시각 키워드도 추가합니다.
+    """
     fields = [
         card.get("company", ""),
         card.get("theme", ""),
@@ -195,6 +221,12 @@ def build_card_keywords(card):
         elif len(clean) >= 4 and clean not in GENERIC_TERMS:
             tokens.add(clean)
 
+    # active_memory IMAGE_POLICY_V3 카테고리 키워드 매핑 추가
+    theme = str(card.get("theme", "")).lower()
+    for cat_key, cat_keywords in CATEGORY_KEYWORD_MAP.items():
+        if cat_key in theme or cat_key in raw_text.lower():
+            tokens.update(cat_keywords)
+
     return sorted(tokens, key=len, reverse=True)
 
 
@@ -209,11 +241,20 @@ def has_irrelevant_context(text):
     return any(pattern in text for pattern in IRRELEVANT_IMAGE_CONTEXT_PATTERNS)
 
 
-def candidate_matches_card(candidate, keywords):
-    """이미지 URL/alt/title 문맥이 카드 핵심어와 맞는지 확인합니다."""
+def candidate_matches_card(candidate, keywords, is_og=False):
+    """이미지 URL/alt/title 문맥이 카드 핵심어와 맞는지 확인합니다.
+
+    [수정] og:image는 기사 원문이 직접 지정한 대표 이미지이므로
+    CDN URL처럼 URL에 키워드가 없어도 문맥 검사를 통과시킵니다.
+    단, IRRELEVANT_IMAGE_CONTEXT_PATTERNS는 og:image에도 적용합니다.
+    """
     text = candidate_text(candidate)
     if has_irrelevant_context(text):
         return False, "irrelevant_context_pattern"
+
+    # og:image는 키워드 매칭 없이 통과 (CDN URL에는 키워드가 없는 경우가 대부분)
+    if is_og:
+        return True, "og_image_trusted"
 
     for kw in keywords:
         if kw and kw in text:
@@ -232,7 +273,12 @@ def is_valid_image_url(url):
 
 
 def looks_like_logo_or_text_image(img):
-    """단색 배경 위 로고/문자 중심 이미지인지 픽셀 특성으로 판별합니다."""
+    """단색 배경 위 로고/문자 중심 이미지인지 픽셀 특성으로 판별합니다.
+
+    [수정] avg_stddev 기준을 12→8로 완화하여 하늘·바다 등
+    단색 배경 실사 사진이 로고로 오탐되는 경우를 줄입니다.
+    조건들은 AND로 묶어 복합 판단합니다.
+    """
     sample = img.convert("RGB").resize((180, 117))
     stat = ImageStat.Stat(sample)
     avg_stddev = sum(stat.stddev) / 3
@@ -246,14 +292,17 @@ def looks_like_logo_or_text_image(img):
     color_count = len(colors)
     top_ratio = max(count for count, _ in colors) / total
 
-    # 사진은 보통 색상 수와 분산이 높다. 로고/워드마크/텍스트 썸네일은 색상 수가 작고 배경색 지배율이 높다.
-    if color_count <= 16 and top_ratio >= 0.30:
+    # 완전 단색에 가까운 경우 (아이콘/워드마크)
+    if color_count <= 8 and top_ratio >= 0.50:
         return True
-    if color_count <= 32 and top_ratio >= 0.45 and avg_stddev < 42:
+    # 색상 수 적고 배경 지배율 높고 분산도 낮은 경우 (로고)
+    if color_count <= 32 and top_ratio >= 0.45 and avg_stddev < 30:
         return True
+    # 색상 수 매우 많아도 배경 지배율이 극단적으로 높으면 단색 배경 텍스트 이미지
     if color_count <= 48 and top_ratio >= 0.58:
         return True
-    if avg_stddev < 12:
+    # 분산이 극히 낮은 경우 (거의 단색 이미지) — 8로 완화
+    if avg_stddev < 8:
         return True
 
     return False
@@ -319,12 +368,10 @@ def crop_and_resize(src_path, dst_path, w=1080, h=702):
             current_ratio = ow / oh
 
             if current_ratio > target_ratio:
-                # 가로가 더 긴 경우 좌우 자르기
                 nw = int(oh * target_ratio)
                 left = (ow - nw) // 2
                 img = img.crop((left, 0, left + nw, oh))
             else:
-                # 세로가 더 긴 경우 상하 자르기
                 nh = int(ow / target_ratio)
                 top = (oh - nh) // 2
                 img = img.crop((0, top, ow, top + nh))
@@ -349,6 +396,59 @@ def process_url(url):
     except Exception:
         pass
     return ""
+
+
+def try_fetch_image_from_url(url, num, theme, company, title, keywords, target_path,
+                             used_signatures, temp_img_path, dry_run, is_source_fallback=False):
+    """단일 URL에서 이미지를 수집 시도합니다. 성공 시 True 반환."""
+    label = "[source_url 폴백]" if is_source_fallback else ""
+    print(f"    🔎 {label} 웹 분석 중: {url[:60]}...")
+    html_content = process_url(url)
+    if not html_content:
+        print("      ✗ 접속 실패")
+        return False
+
+    img_candidates = extract_images_from_html(html_content, url)
+    print(f"      ✓ 이미지 후보 {len(img_candidates)}개 발견")
+
+    for check_og in [True, False]:
+        for candidate in img_candidates:
+            if candidate["is_og"] != check_og:
+                continue
+
+            img_url = candidate["url"]
+
+            if not is_valid_image_url(img_url):
+                print(f"      ✗ URL 패턴 기각: {img_url[:70]}")
+                continue
+
+            # [수정] og:image는 is_og=True 전달 → 키워드 매칭 없이 통과
+            matched, match_reason = candidate_matches_card(candidate, keywords, is_og=check_og)
+            if not matched:
+                print(f"      ✗ 문맥 불일치 기각: {match_reason} ➔ {img_url[:70]}")
+                continue
+
+            if dry_run:
+                print(f"      [Dry-Run] 후보 매칭 검토: {img_url[:70]}")
+                return True
+
+            ok, w, h, reason, signature = download_and_inspect_image(img_url, temp_img_path)
+            if ok:
+                if signature in used_signatures:
+                    print(f"      ✗ 중복 이미지 기각: 이미 다른 카드에서 사용한 이미지 ({w}x{h})")
+                    if os.path.exists(temp_img_path):
+                        os.remove(temp_img_path)
+                    continue
+
+                print(f"      ✓ 적격 이미지 획득 성공! ({w}x{h}) ➔ {img_url[:50]}...")
+                crop_ok = crop_and_resize(temp_img_path, target_path)
+                if crop_ok:
+                    used_signatures.add(signature)
+                    if os.path.exists(temp_img_path):
+                        os.remove(temp_img_path)
+                    return True
+
+    return False
 
 
 def main():
@@ -389,76 +489,39 @@ def main():
 
         print(f"\n  [{num}] {company}: {title}")
 
-        # 교차 검증 URL 풀 생성 (related_urls가 없으면 기존 image_url이나 source 활용)
-        urls = card.get("related_urls", [])
-        if not urls and card.get("source_url"):
-            urls = [card["source_url"]]
+        related_urls = card.get("related_urls", [])
+        source_url = card.get("source_url", "")
 
-        if not urls:
-            print("    ⚠ 교차 기사 URL이 등록되어 있지 않습니다. 자동 검색이 필요합니다.")
+        # [수정] related_urls가 2개 미만이면 경고 출력 (active_memory 정책: 최소 2개 강제)
+        if len(related_urls) < 2:
+            print(f"    ⚠ [정책 경고] related_urls가 {len(related_urls)}개입니다. active_memory 정책상 최소 2개가 필요합니다.")
+
+        if not related_urls and not source_url:
+            print("    ⚠ 교차 기사 URL도, source_url도 등록되어 있지 않습니다. 자동 검색이 필요합니다.")
             print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={company}, title={title}, query={card.get('image_search')}")
             continue
 
         image_found = False
 
-        for url_idx, url in enumerate(urls):
-            print(f"    🔎 [{url_idx+1}/{len(urls)}] 교차 기사 웹 분석 중: {url[:60]}...")
-            html_content = process_url(url)
-            if not html_content:
-                print("      ✗ 접속 실패")
-                continue
-
-            img_candidates = extract_images_from_html(html_content, url)
-            print(f"      ✓ 이미지 후보 {len(img_candidates)}개 발견")
-
-            # og:image 우선으로 적격성 검증
-            # 1회차 루프: og_image 검사 / 2회차 루프: 일반 img 검사
-            for check_og in [True, False]:
-                if image_found:
-                    break
-
-                for candidate in img_candidates:
-                    if candidate["is_og"] != check_og:
-                        continue
-
-                    img_url = candidate["url"]
-
-                    if not is_valid_image_url(img_url):
-                        print(f"      ✗ URL 패턴 기각: {img_url[:70]}")
-                        continue
-
-                    matched, match_reason = candidate_matches_card(candidate, keywords)
-                    if not matched:
-                        print(f"      ✗ 문맥 불일치 기각: {match_reason} ➔ {img_url[:70]}")
-                        continue
-
-                    if dry_run:
-                        print(f"      [Dry-Run] 후보 매칭 검토: {img_url[:70]}")
-                        # 실제 다운로드 검증은 dry-run에서 생략
-                        image_found = True
-                        break
-
-                    # 실제 검증 및 다운로드
-                    ok, w, h, reason, signature = download_and_inspect_image(img_url, temp_img_path)
-                    if ok:
-                        if signature in used_signatures:
-                            print(f"      ✗ 중복 이미지 기각: 이미 다른 카드에서 사용한 이미지 ({w}x{h})")
-                            if os.path.exists(temp_img_path):
-                                os.remove(temp_img_path)
-                            continue
-
-                        print(f"      ✓ 적격 이미지 획득 성공! ({w}x{h}) ➔ {img_url[:50]}...")
-                        # 카드뉴스 규격으로 크롭 가공 후 보관
-                        crop_ok = crop_and_resize(temp_img_path, target_path)
-                        if crop_ok:
-                            image_found = True
-                            used_signatures.add(signature)
-                            if os.path.exists(temp_img_path):
-                                os.remove(temp_img_path)
-                            break
-
+        # 1차: related_urls 순회
+        for url_idx, url in enumerate(related_urls):
             if image_found:
                 break
+            print(f"    🔎 [{url_idx+1}/{len(related_urls)}] 교차 기사 웹 분석 중: {url[:60]}...")
+            image_found = try_fetch_image_from_url(
+                url, num, theme, company, title, keywords,
+                target_path, used_signatures, temp_img_path, dry_run
+            )
+
+        # [수정] 2차 폴백: related_urls 전부 실패 시 source_url의 og:image 시도
+        # active_memory IMAGE_POLICY_V3: og:image 수집이 1순위 원칙
+        if not image_found and source_url:
+            print(f"    ↩ related_urls 전부 실패 — source_url로 최종 폴백 시도 중...")
+            image_found = try_fetch_image_from_url(
+                source_url, num, theme, company, title, keywords,
+                target_path, used_signatures, temp_img_path, dry_run,
+                is_source_fallback=True
+            )
 
         if image_found:
             print(f"    ✓ [{num}] 미디어 융합 이미지 매칭 완료.")
@@ -467,7 +530,6 @@ def main():
             if not dry_run and os.path.exists(target_path):
                 os.remove(target_path)
                 print(f"    ✓ 기존 부적격 가능 이미지 삭제: {target_filename}")
-            # 플레이스홀더를 만들지 않고 트리거 로그만 던져서 AI 생성을 유도
             print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={company}, title={title}, query={card.get('image_search')}")
 
     print("\n" + "=" * 60)

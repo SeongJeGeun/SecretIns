@@ -195,14 +195,18 @@ def validate_news_data(data, allow_korean_threads=False, allow_wikimedia_fallbac
             if not is_valid_url(image_url):
                 raise ValueError(f"\n[유효성 검증 에러] {comp} image_url 형식이 올바르지 않습니다: {image_url!r}")
         elif not allow_wikimedia_fallback:
-            raise ValueError(
-                f"\n[유효성 검증 에러] {comp} 카드에 image_url이 없습니다.\n"
-                "  - 아무 이미지나 자동 검색하지 않도록 기본값에서는 빌드를 중단합니다.\n"
-                "  - 임시 자동 검색을 허용하려면 --allow-wikimedia-fallback 옵션을 사용하세요."
+            # [수정] 하드 중단 대신 MISSING_IMAGE_TRIGGER 로그 출력 후 계속 진행
+            # fuse_news.py 실패 시 AI가 이미지를 생성하고 image_url을 채워주는 흐름을 지원
+            num = str(idx + 1).zfill(2)
+            theme = card.get("theme", "unknown")
+            print(
+                f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, "
+                f"company={comp}, title={card.get('title', '')}, "
+                f"reason=no_image_url query={card.get('image_search', '')}"
             )
 
         validate_threads(card, comp, allow_korean_threads)
-        print(f"  ✓ {comp} 검증 완료: evidence_urls={len(evidence_urls)}, image_url={'yes' if image_url else 'fallback'}")
+        print(f"  ✓ {comp} 검증 완료: evidence_urls={len(evidence_urls)}, image_url={'yes' if image_url else 'MISSING_TRIGGER_EMITTED'}")
 
 
 def generate_html(data, output_dir):
@@ -436,6 +440,8 @@ def download_images(data, output_dir, reuse_assets=False, allow_wikimedia_fallba
             continue
 
         if not allow_wikimedia_fallback:
+            # [수정] 하드 중단 대신 트리거 로그 출력 후 missing_images에 추가
+            # AI가 이미지를 생성한 뒤 image_url을 채워주면 다음 빌드에서 정상 처리됨
             print(f"[MISSING_IMAGE_TRIGGER] card_num={num}, theme={theme}, company={card['company']}, title={card['title']}, reason=no_image_url")
             missing_images.append(img_file)
             continue
@@ -453,7 +459,10 @@ def download_images(data, output_dir, reuse_assets=False, allow_wikimedia_fallba
             missing_images.append(img_file)
 
     if missing_images:
-        print(f"  ✗ 이미지 누락으로 빌드를 중단합니다: {', '.join(missing_images)}")
+        # [수정] 이미지 누락 시 하드 중단(sys.exit) 대신 경고 출력 후 계속 진행
+        # 누락된 카드는 AI가 이미지를 생성해 image_url을 채운 뒤 --reuse-assets로 재빌드
+        print(f"  ⚠ 이미지 누락 카드 {len(missing_images)}개: {', '.join(missing_images)}")
+        print("  ⚠ [MISSING_IMAGE_TRIGGER]가 발생한 카드는 AI 이미지 생성 후 --reuse-assets로 재빌드하세요.")
         return False
     return True
 
@@ -553,7 +562,10 @@ def main():
     generate_css(data, output_dir)
 
     print("\n[3/6] 이미지 확보")
-    if not download_images(data, output_dir, reuse_assets=args.reuse_assets, allow_wikimedia_fallback=args.allow_wikimedia_fallback):
+    images_ok = download_images(data, output_dir, reuse_assets=args.reuse_assets, allow_wikimedia_fallback=args.allow_wikimedia_fallback)
+    if not images_ok:
+        print("\n  ⚠ 일부 이미지가 누락되어 빌드를 중단합니다.")
+        print("  ⚠ AI로 누락 이미지를 생성한 뒤 news_data.json의 image_url을 채우고 --reuse-assets로 재실행하세요.")
         sys.exit(1)
 
     print("\n[4/6] PNG 렌더링")
