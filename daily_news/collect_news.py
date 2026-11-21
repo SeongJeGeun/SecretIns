@@ -13,8 +13,9 @@ import os
 import sys
 import json
 import re
-import html
 import urllib.request
+import html
+from public_media import ARTICLE_LIMIT, HEADERS, fetch_public
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
@@ -24,9 +25,6 @@ import urllib.parse
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(SCRIPT_DIR, "raw_news_pool.json")
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
 
 # URL 쿼리 파라미터 인코딩
 ko_query = urllib.parse.quote("when:24h (AI OR IT OR 테크 OR 반도체)")
@@ -63,10 +61,13 @@ def fetch_feed(name, config):
     url = config["url"]
     print(f"  → [{name}] RSS 피드 가져오는 중: {url}")
     try:
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=15) as response:
-            xml_data = response.read()
-        return xml_data
+        # Feed endpoints are fixed configuration. Only article URLs come from the feed.
+        limit = 8 * 1024 * 1024
+        with urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=15) as response:
+            data = response.read(limit + 1)
+        if len(data) > limit:
+            raise ValueError("RSS feed exceeds size limit")
+        return data
     except Exception as e:
         print(f"  ✗ [{name}] 피드 가져오기 실패: {e}", file=sys.stderr)
         return None
@@ -76,21 +77,20 @@ def fetch_og_image(url):
     if not url or not url.startswith("http"):
         return ""
     try:
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=5) as response:
-            html_content = response.read().decode('utf-8', errors='ignore')
-            # og:image 태그 매칭
-            match = re.search(r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']', html_content, re.IGNORECASE)
-            if not match:
-                match = re.search(r'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']', html_content, re.IGNORECASE)
-            if match:
-                img_url = match.group(1).strip()
-                if img_url.startswith("//"):
-                    img_url = "https:" + img_url
-                elif img_url.startswith("/") and not img_url.startswith("//"):
-                    from urllib.parse import urljoin
-                    img_url = urljoin(url, img_url)
-                return img_url
+        data = fetch_public(url, limit=ARTICLE_LIMIT, timeout=5, prefix=True)
+        html_content = data.decode("utf-8", errors="ignore")
+        # og:image 태그 매칭
+        match = re.search(r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\']', html_content, re.IGNORECASE)
+        if not match:
+            match = re.search(r'<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\']', html_content, re.IGNORECASE)
+        if match:
+            img_url = match.group(1).strip()
+            if img_url.startswith("//"):
+                img_url = "https:" + img_url
+            elif img_url.startswith("/") and not img_url.startswith("//"):
+                from urllib.parse import urljoin
+                img_url = urljoin(url, img_url)
+            return img_url
     except Exception:
         pass
     return ""
@@ -180,13 +180,14 @@ def main():
         xml_data = fetch_feed(name, config)
         if xml_data:
             items = parse_rss(xml_data, config)
-            items = enrich_items_with_images(items)
             print(f"    ✓ {len(items)}개 기사 파싱 성공")
             for item in items:
                 # 중복 링크 제거
                 if item["link"] not in seen_links:
                     seen_links.add(item["link"])
                     news_pool.append(item)
+
+    enrich_items_with_images(news_pool)
 
     # 결과물 구조화
     output_data = {

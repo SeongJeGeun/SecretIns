@@ -15,18 +15,13 @@ import os
 import re
 import sys
 import json
-import time
-import subprocess
-import urllib.request
 import urllib.parse
 from PIL import Image, ImageStat
 
+from public_media import ARTICLE_LIMIT, build_date, fetch_public, open_web_image, save_card_image, theme_name
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(SCRIPT_DIR, "news_data.json")
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
 
 # 기각할 이미지 파일명/키워드 패턴 (로고, 아이콘, 아바타, 배너, 기본 OG 이미지 배제)
 EXCLUDE_KEYWORDS = [
@@ -308,98 +303,35 @@ def looks_like_logo_or_text_image(img):
     return False
 
 
-def image_signature(path):
+def image_signature(img):
     """동일/유사 이미지 반복 사용을 막기 위한 단순 perceptual hash."""
-    with Image.open(path) as img:
-        sample = img.convert("L").resize((8, 8), Image.Resampling.LANCZOS)
-        pixels = list(sample.getdata())
-        avg = sum(pixels) / len(pixels)
-        return "".join("1" if p >= avg else "0" for p in pixels)
+    pixels = img.convert("L").resize((8, 8), Image.Resampling.LANCZOS).tobytes()
+    avg = sum(pixels) / len(pixels)
+    return "".join("1" if p >= avg else "0" for p in pixels)
 
 
-def inspect_image_file(path):
-    """다운로드된 이미지가 카드뉴스 실사 배경으로 적합한지 검증합니다."""
-    with Image.open(path) as img:
-        w, h = img.size
-        if w < 500:
-            return False, w, h, "width_under_500px"
-        if h <= 0 or w < h:
-            return False, w, h, "non_landscape_image"
-        if (w / h) > 2.6:
-            return False, w, h, "banner_like_ratio"
-        if looks_like_logo_or_text_image(img):
-            return False, w, h, "logo_or_text_like_image"
-    return True, w, h, "ok"
-
-
-def download_and_inspect_image(url, temp_path):
-    """이미지를 다운로드하여 해상도, 비율, 로고/텍스트성 여부를 점검합니다."""
-    try:
-        result = subprocess.run(
-            ["curl", "-sL", "-A", HEADERS["User-Agent"], "--max-time", "5", "-o", temp_path, url],
-            capture_output=True, timeout=8
-        )
-        if result.returncode != 0:
-            raise Exception("curl failed")
-
-        ok, w, h, reason = inspect_image_file(temp_path)
-        if ok:
-            return True, w, h, reason, image_signature(temp_path)
-        print(f"      ✗ 이미지 기각: {reason} ({w}x{h})")
-    except Exception:
-        pass
-
-    if os.path.exists(temp_path):
-        try:
-            os.remove(temp_path)
-        except Exception:
-            pass
-    return False, 0, 0, "download_or_inspection_failed", None
-
-
-def crop_and_resize(src_path, dst_path, w=1080, h=702):
-    """이미지를 카드뉴스 규격(1080x702, center crop)에 맞게 가공합니다."""
-    try:
-        with Image.open(src_path) as img:
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            ow, oh = img.size
-            target_ratio = w / h
-            current_ratio = ow / oh
-
-            if current_ratio > target_ratio:
-                nw = int(oh * target_ratio)
-                left = (ow - nw) // 2
-                img = img.crop((left, 0, left + nw, oh))
-            else:
-                nh = int(ow / target_ratio)
-                top = (oh - nh) // 2
-                img = img.crop((0, top, ow, top + nh))
-
-            img = img.resize((w, h), Image.Resampling.LANCZOS)
-            img.save(dst_path, "PNG")
-        return True
-    except Exception as e:
-        print(f"      ✗ 리사이즈 실패: {e}")
-        return False
+def rejection_reason(img):
+    if img.width < 500:
+        return "width_under_500px"
+    if img.width < img.height:
+        return "non_landscape_image"
+    if img.width / img.height > 2.6:
+        return "banner_like_ratio"
+    if looks_like_logo_or_text_image(img):
+        return "logo_or_text_like_image"
+    return None
 
 
 def process_url(url):
-    """URL에 방문해 HTML을 가져옵니다."""
     try:
-        result = subprocess.run(
-            ["curl", "-sL", "-A", HEADERS["User-Agent"], "--max-time", "5", url],
-            capture_output=True, text=True, timeout=8
-        )
-        if result.returncode == 0:
-            return result.stdout
-    except Exception:
-        pass
-    return ""
+        data = fetch_public(url, limit=ARTICLE_LIMIT, timeout=5, prefix=True)
+        return data.decode("utf-8", errors="replace")
+    except (OSError, ValueError):
+        return ""
 
 
 def try_fetch_image_from_url(url, num, theme, company, title, keywords, target_path,
-                             used_signatures, temp_img_path, dry_run, is_source_fallback=False):
+                             used_signatures, dry_run, is_source_fallback=False):
     """단일 URL에서 이미지를 수집 시도합니다. 성공 시 True 반환."""
     label = "[source_url 폴백]" if is_source_fallback else ""
     print(f"    🔎 {label} 웹 분석 중: {url[:60]}...")
@@ -432,21 +364,21 @@ def try_fetch_image_from_url(url, num, theme, company, title, keywords, target_p
                 print(f"      [Dry-Run] 후보 매칭 검토: {img_url[:70]}")
                 return True
 
-            ok, w, h, reason, signature = download_and_inspect_image(img_url, temp_img_path)
-            if ok:
-                if signature in used_signatures:
-                    print(f"      ✗ 중복 이미지 기각: 이미 다른 카드에서 사용한 이미지 ({w}x{h})")
-                    if os.path.exists(temp_img_path):
-                        os.remove(temp_img_path)
-                    continue
-
-                print(f"      ✓ 적격 이미지 획득 성공! ({w}x{h}) ➔ {img_url[:50]}...")
-                crop_ok = crop_and_resize(temp_img_path, target_path)
-                if crop_ok:
+            try:
+                with open_web_image(img_url, timeout=5) as img:
+                    reason = rejection_reason(img)
+                    if reason:
+                        print(f"      ✗ 이미지 기각: {reason} ({img.width}x{img.height})")
+                        continue
+                    signature = image_signature(img)
+                    if signature in used_signatures:
+                        print("      ✗ 이미 다른 카드에서 사용한 이미지")
+                        continue
+                    save_card_image(img, target_path)
                     used_signatures.add(signature)
-                    if os.path.exists(temp_img_path):
-                        os.remove(temp_img_path)
                     return True
+            except (OSError, ValueError, Image.DecompressionBombError) as exc:
+                print(f"      ✗ 이미지 처리 실패: {exc}")
 
     return False
 
@@ -461,7 +393,7 @@ def main():
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         news_data = json.load(f)
 
-    date = news_data.get("date")
+    date = build_date(news_data.get("date"))
     cards = news_data.get("cards", [])
 
     print("\n" + "=" * 60)
@@ -474,12 +406,11 @@ def main():
     if not dry_run:
         os.makedirs(assets_dir, exist_ok=True)
 
-    temp_img_path = os.path.join(SCRIPT_DIR, "temp_fuse_img.tmp")
     used_signatures = set()
 
     for i, card in enumerate(cards):
         num = str(i + 2).zfill(2)
-        theme = card["theme"]
+        theme = theme_name(card["theme"])
         company = card["company"]
         title = card["title"]
         keywords = build_card_keywords(card)
@@ -489,7 +420,7 @@ def main():
 
         print(f"\n  [{num}] {company}: {title}")
 
-        related_urls = card.get("related_urls", [])
+        related_urls = list(dict.fromkeys(card.get("related_urls", [])))
         source_url = card.get("source_url", "")
 
         # [수정] related_urls가 2개 미만이면 경고 출력 (active_memory 정책: 최소 2개 강제)
@@ -510,16 +441,16 @@ def main():
             print(f"    🔎 [{url_idx+1}/{len(related_urls)}] 교차 기사 웹 분석 중: {url[:60]}...")
             image_found = try_fetch_image_from_url(
                 url, num, theme, company, title, keywords,
-                target_path, used_signatures, temp_img_path, dry_run
+                target_path, used_signatures, dry_run
             )
 
         # [수정] 2차 폴백: related_urls 전부 실패 시 source_url의 og:image 시도
         # active_memory IMAGE_POLICY_V3: og:image 수집이 1순위 원칙
-        if not image_found and source_url:
+        if not image_found and source_url and source_url not in related_urls:
             print(f"    ↩ related_urls 전부 실패 — source_url로 최종 폴백 시도 중...")
             image_found = try_fetch_image_from_url(
                 source_url, num, theme, company, title, keywords,
-                target_path, used_signatures, temp_img_path, dry_run,
+                target_path, used_signatures, dry_run,
                 is_source_fallback=True
             )
 

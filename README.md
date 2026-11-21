@@ -34,6 +34,16 @@ Obsidian Vault나 외부 백그라운드 엔진(Codex)과의 복잡한 연동 �
 
 ## 3. 실행 방법 (Usage)
 
+Python 3.11 이상과 Node.js 20 이상에서 의존성과 렌더링 브라우저를 설치합니다.
+
+```bash
+python3 -m pip install -r requirements.txt
+npm ci
+npx playwright install chromium --only-shell
+```
+
+기사와 이미지 수집기는 이동하는 주소마다 호스트의 공개 IP를 로컬 DNS로 확인합니다. 프록시를 사용하면 HTTPS 기사·이미지만 수집합니다. 프록시만 외부 이름을 해석할 수 있는 망에서는 RSS 수집 후 기사 이미지가 누락될 수 있습니다. 이 경우 기존 로컬 이미지에 `--reuse-assets`를 사용할 수 있습니다.
+
 ### 3-1. 수동 실행 순서
 오늘 자 뉴스를 지금 즉시 수동으로 발행하고 싶을 때 사용하는 흐름입니다.
 

@@ -16,7 +16,13 @@ import sys
 import json
 import time
 import argparse
+import hashlib
+from datetime import datetime
 import shutil
+from tempfile import NamedTemporaryFile
+
+from filelock import FileLock, Timeout
+from public_media import build_date, card_filenames
 
 import requests
 from dotenv import load_dotenv
@@ -45,44 +51,14 @@ def load_history():
 
 
 def save_history(history):
-    with open(HISTORY_PATH, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
-
-
-def is_duplicate(date, mode):
-    """같은 날짜 + 모드 조합이 이미 게시됐는지 확인"""
-    history = load_history()
-    for entry in history:
-        if entry.get("date") == date and entry.get("mode") == mode:
-            return True, entry
-    return False, None
-
-
-def record_publish(date, mode, ig_result, threads_results, telegram_ok):
-    """게시 이력 기록"""
-    from datetime import datetime
-    history = load_history()
-    
-    threads_list = []
-    if threads_results:
-        for r in threads_results:
-            if r.get("status") == "success":
-                threads_list.append({
-                    "company": r.get("company"),
-                    "root_id": r.get("root_id")
-                })
-                
-    history.append({
-        "date": date,
-        "mode": mode,
-        "published_at": datetime.now().isoformat(),
-        "instagram_id": ig_result,
-        "threads": threads_list,
-        "threads_count": len(threads_list),
-        "telegram": telegram_ok,
-    })
-    save_history(history)
-    print(f"  ✓ 게시 이력 기록 완료 ({date}/{mode})")
+    with NamedTemporaryFile(mode="w", dir=os.path.dirname(HISTORY_PATH), delete=False, encoding="utf-8") as f:
+        try:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+            f.close()
+            os.replace(f.name, HISTORY_PATH)
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
 
 
 # ============================================================
@@ -143,13 +119,15 @@ def upload_to_catbox(file_path):
 def get_instagram_account_id():
     res = requests.get(
         "https://graph.facebook.com/v19.0/me/accounts",
-        params={"access_token": IG_TOKEN},
+        headers={"Authorization": f"Bearer {IG_TOKEN}"},
+        timeout=30,
     )
     pages = res.json().get("data", [])
     for page in pages:
         ig_res = requests.get(
             f"https://graph.facebook.com/v19.0/{page['id']}",
-            params={"fields": "instagram_business_account", "access_token": IG_TOKEN},
+            params={"fields": "instagram_business_account"}, headers={"Authorization": f"Bearer {IG_TOKEN}"},
+            timeout=30,
         )
         ig_data = ig_res.json()
         if "instagram_business_account" in ig_data:
@@ -259,21 +237,15 @@ def publish_instagram(image_urls, caption):
     try:
         res_media = requests.get(
             f"https://graph.facebook.com/v19.0/{ig_id}/media",
-            params={
-                "fields": "id,caption",
-                "access_token": IG_TOKEN
-            },
+            params={"fields": "id,caption"}, headers={"Authorization": f"Bearer {IG_TOKEN}"},
             timeout=20
         )
         media_list_data = res_media.json()
         
-        # 캡션 앞 30글자를 매칭 키로 사용
-        match_key = caption[:30].strip()
-        
-        # 최근 5개의 피드 중 캡션이 겹치는 글이 실제로 올라왔는지 검증
+        # 조회된 ID 또는 전체 캡션이 이번 게시물과 일치하는지 확인
         for media in media_list_data.get("data", [])[:5]:
             med_caption = media.get("caption", "")
-            if match_key in med_caption:
+            if (published_id and media["id"] == published_id) or (not published_id and med_caption == caption):
                 print(f"  ✓ Instagram 피드 실제 발행 확인 완료! Media ID: {media['id']}")
                 return media["id"]
         
@@ -297,7 +269,8 @@ def publish_instagram(image_urls, caption):
 def get_threads_user_id():
     res = requests.get(
         "https://graph.threads.net/v1.0/me",
-        params={"access_token": THREADS_TOKEN},
+        headers={"Authorization": f"Bearer {THREADS_TOKEN}"},
+        timeout=30,
     )
     data = res.json()
     if "id" in data:
@@ -329,6 +302,7 @@ def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None
     res = requests.post(
         f"https://graph.threads.net/v1.0/{user_id}/threads",
         data=payload,
+        timeout=30,
     )
     data = res.json()
     if "id" not in data:
@@ -341,6 +315,7 @@ def create_and_publish_thread(user_id, text, reply_to_id=None, poll_options=None
     res = requests.post(
         f"https://graph.threads.net/v1.0/{user_id}/threads_publish",
         data={"creation_id": creation_id, "access_token": THREADS_TOKEN},
+        timeout=30,
     )
     pub_data = res.json()
     if "id" in pub_data:
@@ -384,15 +359,18 @@ def build_thread_single_from_card(card):
     return single_text
 
 
-def publish_threads(news_cards, date):
+def publish_threads(news_cards, previous, on_success):
     """각 뉴스 데이터별 Threads 텍스트 포스트 게시"""
     print("\n  [Threads] 텍스트 포스트 게시 시작...")
-    user_id = get_threads_user_id()
-    print(f"    User ID: {user_id}")
+    completed = {item["index"]: item for item in previous}
+    user_id = get_threads_user_id() if len(completed) < len(news_cards) else None
 
     results = []
     for i, card in enumerate(news_cards):
         company = card["company"]
+        if i in completed:
+            results.append({**completed[i], "status": "success", "post_count": 1})
+            continue
         post_text = build_thread_single_from_card(card)
 
         print(f"\n    [{i+1}/{len(news_cards)}] {company} (텍스트 포스트)")
@@ -406,14 +384,6 @@ def publish_threads(news_cards, date):
             post_id = create_and_publish_thread(user_id, post_text, reply_to_id=None, poll_options=poll_opts)
             print(f"      ✓ ID: {post_id}")
 
-            results.append({
-                "company": company,
-                "root_id": post_id,
-                "post_count": 1,
-                "status": "success",
-            })
-            print(f"      ✓ {company} 게시 완료")
-
         except Exception as e:
             print(f"      ✗ 실패: {e}")
             results.append({
@@ -422,7 +392,12 @@ def publish_threads(news_cards, date):
                 "status": "failed",
             })
 
-        time.sleep(5)
+        else:
+            entry = {"index": i, "company": company, "root_id": post_id}
+            on_success(entry)
+            results.append({**entry, "status": "success", "post_count": 1})
+        if i + 1 < len(news_cards):
+            time.sleep(5)
 
     success = sum(1 for r in results if r["status"] == "success")
     print(f"\n  ✓ Threads 텍스트 포스트 게시 완료: {success}/{len(news_cards)}개 성공")
@@ -468,6 +443,7 @@ def send_telegram_report(date, mode, news_cards, ig_result, threads_results):
     res = requests.post(
         f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage",
         data={"chat_id": TG_CHAT_ID, "text": message, "parse_mode": "HTML"},
+        timeout=30,
     )
     data = res.json()
     if data.get("ok"):
@@ -479,7 +455,7 @@ def send_telegram_report(date, mode, news_cards, ig_result, threads_results):
 
 def send_telegram_image(image_path, caption=""):
     if not os.path.exists(image_path):
-        return
+        return False
     print("  [Telegram] 콘택트 시트 전송...")
     file_size = os.path.getsize(image_path)
     
@@ -496,11 +472,14 @@ def send_telegram_image(image_path, caption=""):
             f"https://api.telegram.org/bot{TG_BOT_TOKEN}/{method}",
             data={"chat_id": TG_CHAT_ID, "caption": caption},
             files={file_key: f},
+            timeout=30,
         )
     if res.json().get("ok"):
         print(f"  ✓ 콘택트 시트 전송 완료 ({method})")
+        return True
     else:
         print(f"  ✗ 이미지 전송 실패: {res.json()}")
+        return False
 
 
 def has_successful_content_publish(ig_result, threads_results):
@@ -516,7 +495,7 @@ def has_successful_content_publish(ig_result, threads_results):
 # ============================================================
 def main():
     parser = argparse.ArgumentParser(description="Daily News Auto Publisher")
-    parser.add_argument("--date", required=True, help="발행 날짜 (YYYY-MM-DD)")
+    parser.add_argument("--date", required=True, type=build_date, help="발행 날짜 (YYYY-MM-DD)")
     parser.add_argument("--data", default=None, help="news_data.json 경로")
     parser.add_argument("--skip-instagram", action="store_true")
     parser.add_argument("--skip-threads", action="store_true")
@@ -525,6 +504,14 @@ def main():
     parser.add_argument("--clean", action="store_true", help="발행 완료 후 로컬 빌드 파일 및 임시 다운로드 폴더 자동 삭제")
     args = parser.parse_args()
 
+    try:
+        with FileLock(HISTORY_PATH + ".lock", timeout=0):
+            publish(args)
+    except Timeout:
+        parser.exit(1, "다른 발행 작업이 진행 중입니다.\n")
+
+
+def publish(args):
     date = args.date
     build_dir = os.path.join(SCRIPT_DIR, date)
     output_dir = os.path.join(build_dir, "output")
@@ -546,6 +533,8 @@ def main():
     with open(data_path, "r", encoding="utf-8") as f:
         news_data = json.load(f)
 
+    if news_data.get("date") != date:
+        sys.exit("원고 날짜와 발행 날짜가 일치하지 않습니다.")
     cards = news_data["cards"]
     mode = news_data.get("mode", "daily")
 
@@ -553,40 +542,71 @@ def main():
     print(f"  Daily News Publisher — {date} ({mode})")
     print(f"{'='*60}")
 
-    # ── 중복 검사 ──
-    if not args.force:
-        dup, entry = is_duplicate(date, mode)
-        if dup:
-            print(f"\n  ⚠ 중복 감지! {date}/{mode}는 이미 게시됨")
-            print(f"    게시 시각: {entry.get('published_at', '?')}")
-            print(f"    --force 옵션으로 강제 게시 가능")
-            print(f"\n{'='*60}\n")
-            sys.exit(0)
+    history = load_history()
+    entry = next((row for row in reversed(history)
+                  if row.get("date") == date and row.get("mode") == mode), None)
+    digest = hashlib.sha256(json.dumps(news_data, sort_keys=True).encode()).hexdigest()
+    channels = [name for name in ("instagram", "threads", "telegram") if not getattr(args, f"skip_{name}")]
+    if not channels:
+        print("  모든 발행 채널을 건너뜁니다.")
+        return
+    if entry and not args.force and not entry.get("partial"):
+        if "channels" not in entry or set(channels).issubset(entry["channels"]):
+            print(f"  ✓ 이미 발행한 원고입니다 ({date}/{mode}).")
+            return
+        if entry["input_hash"] != digest:
+            sys.exit("원고가 변경되었습니다. 이전 발행 내용을 확인하세요.")
+        # Keep confirmed destinations when a subsequent invocation adds a channel.
+        channels = sorted(set(channels) | set(entry["channels"]))
+        entry["channels"] = channels
+        entry["partial"] = True
+        if not args.skip_telegram:
+            entry["telegram"] = False
+            entry["telegram_report"] = False
+    if not entry or args.force:
+        entry = {"date": date, "mode": mode, "published_at": datetime.now().isoformat(),
+                 "input_hash": digest, "channels": channels, "partial": True,
+                 "instagram_id": None, "threads": [], "threads_count": 0, "telegram": False}
+        history.append(entry)
+    elif entry["input_hash"] != digest or not set(channels).issubset(entry["channels"]):
+        sys.exit("부분 발행을 재개하려면 이전과 같은 원고와 채널을 사용하세요.")
+
+    def checkpoint():
+        try:
+            save_history(history)
+        except OSError:
+            sys.exit("발행 이력 저장에 실패했습니다. 재시도 전에 실제 발행 상태를 확인하세요.")
+
+    def remember_thread(item):
+        entry["threads"].append(item)
+        entry["threads_count"] = len(entry["threads"])
+        checkpoint()
 
     # ── 이미지 파일 사전 검증 ──
     png_files = []
-    if not args.skip_instagram or not args.skip_telegram:
+    needs_instagram = not args.skip_instagram and not entry["instagram_id"]
+    needs_telegram = not args.skip_telegram and not entry["telegram"]
+    if needs_instagram or needs_telegram:
         if not os.path.isdir(output_dir):
             print(f"✗ output 디렉토리를 찾을 수 없습니다: {output_dir}")
             sys.exit(1)
 
-        png_files = sorted([
-            os.path.join(output_dir, f)
-            for f in os.listdir(output_dir)
-            if f.startswith(f"{date}_card_") and f.endswith(".png")
-        ])
+        png_files = [
+            os.path.join(output_dir, name) for name in card_filenames(date, len(cards))
+            if os.path.isfile(os.path.join(output_dir, name))
+        ]
         expected_count = len(cards) + 2
         print(f"\n  카드 이미지: {len(png_files)}장")
 
-        if not args.skip_instagram and len(png_files) != expected_count:
+        if needs_instagram and len(png_files) != expected_count:
             print(f"✗ PNG 개수 불일치: {len(png_files)}장 발견, 예상 {expected_count}장")
             sys.exit(1)
     else:
         print("\n  카드 이미지 검증 건너뜀")
 
     # ── Instagram ──
-    ig_result = None
-    if not args.skip_instagram:
+    ig_result = entry["instagram_id"]
+    if needs_instagram:
         try:
             print("\n  [Catbox] 이미지 업로드 중...")
             public_urls = []
@@ -627,39 +647,50 @@ def main():
             ig_result = publish_instagram(public_urls, caption)
         except Exception as e:
             print(f"  ✗ Instagram 게시 실패: {e}")
+        else:
+            entry["instagram_id"] = ig_result
+            checkpoint()
     else:
         print("\n  [Instagram] 건너뜀")
 
     # ── Threads ──
-    threads_results = None
+    threads_results = [
+        {**item, "status": "success", "post_count": 1} for item in entry["threads"]
+    ]
     if not args.skip_threads:
         try:
-            threads_results = publish_threads(cards, date)
+            threads_results = publish_threads(cards, entry["threads"], remember_thread)
         except Exception as e:
             print(f"  ✗ Threads 게시 실패: {e}")
     else:
         print("\n  [Threads] 건너뜀")
 
-    # ── Telegram ──
-    telegram_ok = False
-    if not args.skip_telegram:
+    content_ok = (
+        ("instagram" not in entry["channels"] or bool(ig_result))
+        and ("threads" not in entry["channels"] or len(entry["threads"]) == len(cards))
+    )
+    if needs_telegram:
         try:
-            telegram_ok = send_telegram_report(date, mode, cards, ig_result, threads_results)
-            sheet_path = os.path.join(output_dir, "contact_sheet.png")
-            send_telegram_image(sheet_path, f"📊 {date} 콘택트 시트")
+            if not entry.get("telegram_report"):
+                report_ok = send_telegram_report(date, mode, cards, ig_result, threads_results)
+                # A partial-failure report should be refreshed after the remaining posts succeed.
+                if report_ok and content_ok:
+                    entry["telegram_report"] = True
+                    checkpoint()
+            if not entry.get("telegram_sheet"):
+                if send_telegram_image(os.path.join(output_dir, "contact_sheet.png"), f"📊 {date} 콘택트 시트"):
+                    entry["telegram_sheet"] = True
+                    checkpoint()
+            entry["telegram"] = bool(entry.get("telegram_report") and entry.get("telegram_sheet"))
         except Exception as e:
-            print(f"  ✗ Telegram 보고 실패: {e}")
-    else:
-        print("\n  [Telegram] 건너뜀")
+            print(f"  ✗ Telegram 보고 실패: {type(e).__name__}")
 
-    # ── 게시 이력 기록 ──
-    if has_successful_content_publish(ig_result, threads_results):
-        record_publish(date, mode, ig_result, threads_results, telegram_ok)
-    else:
-        print("  ⚠ Instagram/Threads 게시 성공 항목이 없어 게시 이력 기록을 생략합니다.")
-
-    # ── 로컬 파일 정리 (Clean up) ──
-    if args.clean:
+    complete = content_ok and ("telegram" not in entry["channels"] or entry["telegram"])
+    if not complete:
+        sys.exit("요청한 발행 중 실패가 있어 로컬 빌드 파일을 보존합니다.")
+    entry["partial"] = False
+    checkpoint()
+    if args.clean and has_successful_content_publish(ig_result, threads_results):
         try:
             print("\n  [Clean up] 로컬 임시 파일 삭제 중...")
             if os.path.exists(build_dir):

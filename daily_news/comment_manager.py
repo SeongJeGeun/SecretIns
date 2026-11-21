@@ -14,6 +14,7 @@ Usage:
   python3 comment_manager.py --reply --platform threads --id [ID] --message "답변 내용"
 """
 
+from html import escape
 import os
 import sys
 import json
@@ -54,7 +55,7 @@ def get_instagram_unanswered_comments(media_id):
 
     try:
         url = f"https://graph.facebook.com/v19.0/{media_id}/comments"
-        res = requests.get(url, params={"fields": "id,text,username", "access_token": IG_TOKEN}, timeout=15)
+        res = requests.get(url, params={"fields": "id,text,username"}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=15)
         comments = res.json().get("data", [])
 
         for c in comments:
@@ -68,7 +69,7 @@ def get_instagram_unanswered_comments(media_id):
 
             # 이미 대댓글을 달았는지 확인
             replies_url = f"https://graph.facebook.com/v19.0/{c_id}/replies"
-            res_rep = requests.get(replies_url, params={"fields": "id,username", "access_token": IG_TOKEN}, timeout=15)
+            res_rep = requests.get(replies_url, params={"fields": "id,username"}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=15)
             replies = res_rep.json().get("data", [])
 
             already_replied = False
@@ -103,7 +104,7 @@ def get_threads_unanswered_replies(threads):
                 continue
 
             url = f"https://graph.threads.net/v1.0/{node_id}/replies"
-            res = requests.get(url, params={"fields": "id,text,username", "access_token": THREADS_TOKEN}, timeout=15)
+            res = requests.get(url, params={"fields": "id,text,username"}, headers={"Authorization": f"Bearer {THREADS_TOKEN}"}, timeout=15)
             replies = res.json().get("data", [])
 
             for r in replies:
@@ -117,7 +118,7 @@ def get_threads_unanswered_replies(threads):
 
                 # 이미 우리가 답글을 달아주었는지 확인
                 child_url = f"https://graph.threads.net/v1.0/{r_id}/replies"
-                res_child = requests.get(child_url, params={"fields": "id,username", "access_token": THREADS_TOKEN}, timeout=15)
+                res_child = requests.get(child_url, params={"fields": "id,username"}, headers={"Authorization": f"Bearer {THREADS_TOKEN}"}, timeout=15)
                 child_replies = res_child.json().get("data", [])
 
                 already_replied = False
@@ -144,7 +145,7 @@ def post_instagram_reply(comment_id, message):
     if not IG_TOKEN:
         raise Exception("INSTAGRAM_ACCESS_TOKEN 이 존재하지 않습니다.")
     url = f"https://graph.facebook.com/v19.0/{comment_id}/replies"
-    res = requests.post(url, params={"message": message, "access_token": IG_TOKEN}, timeout=15)
+    res = requests.post(url, data={"message": message}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=15)
     data = res.json()
     if "id" in data:
         return data["id"]
@@ -194,19 +195,19 @@ def send_telegram_notification(platform, username, origin_text, reply_text):
         f"💬 <b>AI 대댓글 소통 완료 보고</b>\n"
         f"────────────────\n"
         f"🌐 플랫폼: {plat_label}\n"
-        f"👤 대상 독자: @{username}\n"
-        f"📝 원본 댓글: {origin_text[:50]}...\n"
-        f"✨ AI 답글: {reply_text}\n"
+        f"👤 대상 독자: @{escape(username)}\n"
+        f"📝 원본 댓글: {escape(origin_text[:50])}...\n"
+        f"✨ AI 답글: {escape(reply_text)}\n"
         f"────────────────\n"
         f"🤖 IT Media OS 자동화"
     )
     try:
-        requests.post(
+        response = requests.post(
             f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage",
             data={"chat_id": TG_CHAT_ID, "text": message, "parse_mode": "HTML"},
             timeout=10
         )
-        return True
+        return bool(response.json().get("ok"))
     except Exception:
         return False
 
@@ -289,7 +290,7 @@ def main():
             if args.platform == "instagram":
                 # 인스타그램 원본 댓글 텍스트 및 유저 조회를 위한 페치
                 try:
-                    res_c = requests.get(f"https://graph.facebook.com/v19.0/{args.id}", params={"fields": "text,username", "access_token": IG_TOKEN}, timeout=10)
+                    res_c = requests.get(f"https://graph.facebook.com/v19.0/{args.id}", params={"fields": "text,username"}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=10)
                     data_c = res_c.json()
                     username = data_c.get("username", "Reader")
                     origin_text = data_c.get("text", "Unknown Comment")
@@ -300,7 +301,7 @@ def main():
             else:
                 # 스레드 원본 댓글 텍스트 및 유저 조회를 위한 페치
                 try:
-                    res_c = requests.get(f"https://graph.threads.net/v1.0/{args.id}", params={"fields": "text,username", "access_token": THREADS_TOKEN}, timeout=10)
+                    res_c = requests.get(f"https://graph.threads.net/v1.0/{args.id}", params={"fields": "text,username"}, headers={"Authorization": f"Bearer {THREADS_TOKEN}"}, timeout=10)
                     data_c = res_c.json()
                     username = data_c.get("username", "Reader")
                     origin_text = data_c.get("text", "Unknown Comment")
@@ -312,8 +313,8 @@ def main():
             print("✅ 답글 등록 및 실서버 발행 완료!")
             
             # 텔레그램 보고 전송
-            send_telegram_notification(args.platform, username, origin_text, args.message)
-            print("  ✓ Telegram 전송 성공")
+            if send_telegram_notification(args.platform, username, origin_text, args.message):
+                print("  ✓ Telegram 전송 성공")
 
         except Exception as e:
             print(f"✗ 답글 작성 중 에러 발생: {e}")
