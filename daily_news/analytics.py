@@ -10,6 +10,7 @@ Usage:
   python3 analytics.py
 """
 
+from html import escape
 import os
 import sys
 import json
@@ -47,7 +48,7 @@ def get_instagram_media_stats(media_id):
     # 1. 기본 메타데이터 (좋아요 수)
     try:
         url = f"https://graph.facebook.com/v19.0/{media_id}"
-        res = requests.get(url, params={"fields": "like_count", "access_token": IG_TOKEN}, timeout=15)
+        res = requests.get(url, params={"fields": "like_count"}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=15)
         data = res.json()
         stats["likes"] = data.get("like_count", 0)
     except Exception as e:
@@ -56,7 +57,7 @@ def get_instagram_media_stats(media_id):
     # 1-2. 개별 댓글을 조회하여 본인(mind_factory_news) 제외 순수 독자 댓글만 카운팅
     try:
         url = f"https://graph.facebook.com/v19.0/{media_id}/comments"
-        res = requests.get(url, params={"fields": "username", "access_token": IG_TOKEN}, timeout=15)
+        res = requests.get(url, params={"fields": "username"}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=15)
         comments_data = res.json().get("data", [])
         
         self_username = os.getenv("INSTAGRAM_USERNAME", "mind_factory_news")
@@ -69,10 +70,7 @@ def get_instagram_media_stats(media_id):
     try:
         url = f"https://graph.facebook.com/v19.0/{media_id}/insights"
         metrics = "carousel_album_reach,carousel_album_impressions,carousel_album_saved"
-        res = requests.get(url, params={
-            "metric": metrics,
-            "access_token": IG_TOKEN
-        }, timeout=15)
+        res = requests.get(url, params={"metric": metrics}, headers={"Authorization": f"Bearer {IG_TOKEN}"}, timeout=15)
         insights = res.json().get("data", [])
         for metric in insights:
             name = metric.get("name")
@@ -97,10 +95,7 @@ def get_threads_media_stats(root_id):
     # 1. 기본 메트릭 수집 (likes, reposts)
     try:
         url = f"https://graph.threads.net/v1.0/{root_id}/insights"
-        res = requests.get(url, params={
-            "metric": "likes,reposts",
-            "access_token": THREADS_TOKEN
-        }, timeout=15)
+        res = requests.get(url, params={"metric": "likes,reposts"}, headers={"Authorization": f"Bearer {THREADS_TOKEN}"}, timeout=15)
         data = res.json().get("data", [])
         for metric in data:
             name = metric.get("name")
@@ -115,7 +110,7 @@ def get_threads_media_stats(root_id):
     # 2. 개별 replies 리스트를 불러와서 본인(mind_factory_news)이 작성한 답글은 제외
     try:
         url = f"https://graph.threads.net/v1.0/{root_id}/replies"
-        res = requests.get(url, params={"fields": "username", "access_token": THREADS_TOKEN}, timeout=15)
+        res = requests.get(url, params={"fields": "username"}, headers={"Authorization": f"Bearer {THREADS_TOKEN}"}, timeout=15)
         replies_data = res.json().get("data", [])
         
         self_username = "mind_factory_news"
@@ -214,7 +209,7 @@ def send_telegram_report(analysis):
     
     # 텔레그램 메시지 포맷팅
     message = (
-        f"📊 <b>[{date}] SNS 성과분석 및 개선사항 보고</b>\n"
+        f"📊 <b>[{escape(str(date))}] SNS 성과분석 및 개선사항 보고</b>\n"
         f"{'─' * 30}\n"
         f"📸 <b>Instagram 피드 성과:</b>\n"
         f"  - 도달(Reach): {ig.get('reach', 0):,}명\n"
@@ -223,11 +218,11 @@ def send_telegram_report(analysis):
         f"  - 저장수(Saved): {ig.get('saved', 0)}회\n\n"
         f"🧵 <b>Threads 텍스트 포스트 성과 (총 {th.get('total_posts_analyzed', 0)}건):</b>\n"
         f"  - 총 반응(좋아요/답글): {th.get('total_likes', 0)} / {th.get('total_replies', 0)}\n"
-        f"  - 최고 반응 토픽: {', '.join(analysis.get('top_performing_companies', [])) or '없음'}\n"
+        f"  - 최고 반응 토픽: {escape(', '.join(analysis.get('top_performing_companies', []))) or '없음'}\n"
         f"{'─' * 30}\n"
         f"💡 <b>다음 10AM 업로드 개선사항 피드백:</b>\n"
-        f"  - <b>훅 카피:</b> {fb.get('hook_style')}\n"
-        f"  - <b>태그 최적화:</b> {fb.get('hashtag_strategy')}\n\n"
+        f"  - <b>훅 카피:</b> {escape(fb.get('hook_style', ''))}\n"
+        f"  - <b>태그 최적화:</b> {escape(fb.get('hashtag_strategy', ''))}\n\n"
         f"🤖 IT Media OS 성과보고 및 분석 완료"
     )
     
@@ -243,7 +238,7 @@ def send_telegram_report(analysis):
         else:
             print(f"  ✗ 텔레그램 전송 실패: {res.json()}")
     except Exception as e:
-        print(f"  ✗ 텔레그램 전송 중 예외 발생: {e}")
+        print(f"  ✗ 텔레그램 전송 중 예외 발생: {type(e).__name__}")
         
     return False
 

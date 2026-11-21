@@ -21,11 +21,11 @@ from urllib.parse import urlparse
 import requests
 from PIL import Image
 
+from public_media import HEADERS, build_date, card_filenames, open_web_image, save_card_image, theme_name
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(SCRIPT_DIR, "template")
 DOWNLOADS_DIR = os.path.expanduser("~/Downloads")
-HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"}
-
 ALLOWED_STATUS = {"official", "reported"}
 HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 HANGUL_RE = re.compile(r"[가-힣]")
@@ -115,7 +115,7 @@ def validate_news_data(data, allow_korean_threads=False, allow_wikimedia_fallbac
             raise ValueError(f"\n[유효성 검증 에러] 최상위 필드 누락: {field}")
 
     try:
-        datetime.strptime(data["date"], "%Y-%m-%d")
+        build_date(data["date"])
     except Exception as exc:
         raise ValueError(f"\n[유효성 검증 에러] date는 YYYY-MM-DD 형식이어야 합니다: {data.get('date')!r}") from exc
 
@@ -163,8 +163,7 @@ def validate_news_data(data, allow_korean_threads=False, allow_wikimedia_fallbac
                 raise ValueError(f"\n[유효성 검증 에러] {comp} 카드의 {field} 값은 비어 있지 않은 문자열이어야 합니다.")
         if card["status"] not in ALLOWED_STATUS:
             raise ValueError(f"\n[유효성 검증 에러] {comp} status 값은 official/reported 중 하나여야 합니다.")
-        if not re.match(r"^[a-z0-9_-]+$", card["theme"]):
-            raise ValueError(f"\n[유효성 검증 에러] {comp} theme 값은 영문 소문자, 숫자, _, -만 허용됩니다.")
+        theme_name(card["theme"])
 
         colors = card.get("colors")
         if not isinstance(colors, dict):
@@ -325,7 +324,7 @@ def generate_css(data, output_dir):
         theme = card["theme"]
         colors = card["colors"]
         img = f"card_{num}_{theme}.png"
-        themes += f""".theme-{theme} {{
+        themes += f""".theme-{theme}[data-card-number="{num}"] {{
   --theme-bg: {colors["bg"]};
   --theme-soft: {colors["soft"]};
   --theme-ink: {colors["ink"]};
@@ -366,42 +365,17 @@ def wikimedia_url(filename):
 
 
 def download_and_resize(url, out_path, w=1080, h=702):
-    tmp = out_path + ".tmp"
     try:
-        res = requests.get(url, headers=HEADERS, timeout=30)
-        if res.status_code != 200:
-            print(f"    ✗ HTTP {res.status_code}")
-            return False
-        with open(tmp, "wb") as fp:
-            fp.write(res.content)
-
-        with Image.open(tmp) as img:
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            ow, oh = img.size
-            if ow < 500 or oh < 300:
-                print(f"    ✗ 이미지 해상도가 너무 낮습니다: {ow}x{oh}")
+        with open_web_image(url, timeout=30) as img:
+            if img.width < 500 or img.height < 300:
+                print(f"    ✗ 이미지 해상도가 너무 낮습니다: {img.width}x{img.height}")
                 return False
-            target_ratio = w / h
-            current_ratio = ow / oh
-            if current_ratio > target_ratio:
-                new_w = int(oh * target_ratio)
-                left = (ow - new_w) // 2
-                img = img.crop((left, 0, left + new_w, oh))
-            else:
-                new_h = int(ow / target_ratio)
-                top = (oh - new_h) // 2
-                img = img.crop((0, top, ow, top + new_h))
-            img = img.resize((w, h), Image.Resampling.LANCZOS)
-            img.save(out_path, "PNG")
+            save_card_image(img, out_path, w, h)
         print(f"    ✓ 저장 완료 ({w}x{h})")
         return True
-    except Exception as exc:
-        print(f"    ✗ 에러: {exc}")
+    except (OSError, ValueError, Image.DecompressionBombError) as exc:
+        print(f"    ✗ 이미지 다운로드 실패: {exc}")
         return False
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
 
 
 def download_images(data, output_dir, reuse_assets=False, allow_wikimedia_fallback=False):
@@ -484,18 +458,19 @@ def export_pngs(data, output_dir):
     print(f"  ✓ {result.stdout.strip()}")
 
     out_png_dir = os.path.join(output_dir, "output")
-    files = sorted(f for f in os.listdir(out_png_dir) if f.startswith(f"{date}_card_") and f.endswith(".png"))
-    if not files:
-        print("  ✗ PNG 파일 없음")
+    files = card_filenames(date, len(data["cards"]))
+    if any(not os.path.isfile(os.path.join(out_png_dir, name)) for name in files):
+        print("  ✗ 이번 빌드에서 필요한 PNG 파일이 누락되었습니다.")
         return False
 
-    images = [Image.open(os.path.join(out_png_dir, f)) for f in files]
-    w, h = images[0].size
+    with Image.open(os.path.join(out_png_dir, files[0])) as first:
+        w, h = first.size
     cols = 4
-    rows = math.ceil(len(images) / cols)
+    rows = math.ceil(len(files) / cols)
     sheet = Image.new("RGB", (w * cols, h * rows), (255, 255, 255))
-    for idx, img in enumerate(images):
-        sheet.paste(img, ((idx % cols) * w, (idx // cols) * h))
+    for idx, filename in enumerate(files):
+        with Image.open(os.path.join(out_png_dir, filename)) as img:
+            sheet.paste(img, ((idx % cols) * w, (idx // cols) * h))
     sheet.save(os.path.join(out_png_dir, "contact_sheet.png"))
     print(f"  ✓ 콘택트 시트 저장 ({len(files)}장 → {cols}x{rows} 격자)")
     return True
@@ -504,7 +479,7 @@ def export_pngs(data, output_dir):
 def generate_report(data, output_dir):
     date = data["date"]
     out_png_dir = os.path.join(output_dir, "output")
-    files = sorted(f for f in os.listdir(out_png_dir) if f.startswith(f"{date}_card_") and f.endswith(".png"))
+    files = card_filenames(date, len(data["cards"]))
     report = {"date": date, "card_count": len(files), "news_count": len(data["cards"]), "files": []}
     for fname in files:
         path = os.path.join(out_png_dir, fname)
@@ -519,12 +494,10 @@ def copy_to_downloads(data, output_dir):
     out_png_dir = os.path.join(output_dir, "output")
     dl_dir = os.path.join(DOWNLOADS_DIR, f"{date}_daily_news")
     os.makedirs(dl_dir, exist_ok=True)
-    count = 0
-    for fname in sorted(os.listdir(out_png_dir)):
-        if fname.endswith(".png"):
-            shutil.copy2(os.path.join(out_png_dir, fname), os.path.join(dl_dir, fname))
-            count += 1
-    print(f"  ✓ {count}개 파일 → {dl_dir}")
+    files = [*card_filenames(date, len(data["cards"])), "contact_sheet.png"]
+    for fname in files:
+        shutil.copy2(os.path.join(out_png_dir, fname), os.path.join(dl_dir, fname))
+    print(f"  ✓ {len(files)}개 파일 → {dl_dir}")
 
 
 def main():
@@ -549,7 +522,9 @@ def main():
     date = data["date"]
     output_dir = os.path.join(SCRIPT_DIR, date)
     os.makedirs(output_dir, exist_ok=True)
-    shutil.copy2(args.data, os.path.join(output_dir, "news_data.json"))
+    build_data = os.path.join(output_dir, "news_data.json")
+    if os.path.realpath(args.data) != os.path.realpath(build_data):
+        shutil.copy2(args.data, build_data)
 
     print(f"\n{'='*60}")
     print(f"  Daily News Card Builder — {date}")
@@ -598,7 +573,7 @@ def main():
         print(f"\n{'='*60}")
         print("  📡 자동 게시 시작...")
         print(f"{'='*60}")
-        subprocess.run(publish_cmd, cwd=SCRIPT_DIR)
+        subprocess.run(publish_cmd, cwd=SCRIPT_DIR, check=True)
 
 
 if __name__ == "__main__":
